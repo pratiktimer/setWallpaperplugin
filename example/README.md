@@ -1,6 +1,6 @@
 # wallpaper_example
-
-Demonstrates how to use the wallpaper plugin.
+<p>
+  Demonstrates how to use the wallpaper plugin.
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -95,6 +95,8 @@ class _MyAppState extends State<MyApp> {
         ));
   }
 }
+</p>
+
 
 ## Getting Started
 
