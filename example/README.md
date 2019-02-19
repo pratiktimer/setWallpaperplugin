@@ -1,6 +1,10 @@
 # wallpaper_example
-<p>
-  Demonstrates how to use the wallpaper plugin.
+## Usage
+To use this plugin, add `shared_preferences` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
+
+### Example
+
+``` dart
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -95,7 +99,8 @@ class _MyAppState extends State<MyApp> {
         ));
   }
 }
-</p>
+```
+
 
 
 ## Getting Started
