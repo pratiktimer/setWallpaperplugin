@@ -1,6 +1,6 @@
 # wallpaper_example
 ## Usage
-To use this plugin, add `wallpaper: ^0.0.1` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
+To use this plugin, add `wallpaper: ^0.0.3` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
 
 ### Example
 
