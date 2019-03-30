@@ -60,21 +60,21 @@ public class WallpaperPlugin implements MethodCallHandler {
       if(id==1) {
         try {
           wallpaperManager.setBitmap(bitmap);
-          res="Home Screen Successfully!";
+          res="Home Screen Is Set Successfully!";
         } catch (IOException ex) {
           ex.printStackTrace();
         }
       }
       else if(id==2){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
           try {
             wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK);
-            res="Lock Screen Successfully!";
+            res="Lock Screen Is Set Successfully!";
           } catch (IOException e) {
             res=e.toString();
             e.printStackTrace();
           }
-        }
+       // }
       }
       else if(id==3){
         try {
@@ -83,14 +83,14 @@ public class WallpaperPlugin implements MethodCallHandler {
           res=e.toString();
           e.printStackTrace();
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+       // if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
           try {
             wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK);
-            res="Home And Lock Screen Successfully!";
+            res="Home And Lock Screen Are Set Successfully!";
           } catch (IOException e) {
             res=e.toString();
             e.printStackTrace();
-          }
+        //  }
         }
       }
 
