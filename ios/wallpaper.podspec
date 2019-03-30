@@ -3,7 +3,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'wallpaper'
-  s.version          = '0.0.3'
+  s.version          = '0.0.4'
   s.summary          = 'wallpaper plugin to set wallpaper from url in android'
   s.description      = <<-DESC
 wallpaper plugin to set wallpaper from url in android
