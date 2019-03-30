@@ -1,3 +1,3 @@
-## 0.0.1
+## 0.0.3
 
 * Set HomeScreen,LockScreen and Both Wallpapers in android
