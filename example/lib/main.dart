@@ -35,7 +35,7 @@ class _MyAppState extends State<MyApp> {
                 onPressed: () async {
                   String res;
                   res = await Wallpaper.homeScreen(
-                      "https://images.pexels.com/photos/2056609/pexels-photo-2056609.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500");
+                      "https://images.pexels.com/photos/2642428/pexels-photo-2642428.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500");
                   if (!mounted) return;
                   setState(() {
                     result = res.toString();
@@ -54,7 +54,7 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () async {
                     String res;
                     res = await Wallpaper.lockScreen(
-                        "https://images.pexels.com/photos/2040612/pexels-photo-2040612.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500");
+                        "https://images.pexels.com/photos/2613260/pexels-photo-2613260.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500");
                     if (!mounted) return;
                     setState(() {
                       result = res.toString();
@@ -72,7 +72,7 @@ class _MyAppState extends State<MyApp> {
                   onPressed: () async {
                     String res;
                     res = await Wallpaper.bothScreen(
-                        "https://images.pexels.com/photos/2049487/pexels-photo-2049487.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500");
+                        "https://images.pexels.com/photos/2614625/pexels-photo-2614625.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500");
                     if (!mounted) return;
                     setState(() {
                       result = res;

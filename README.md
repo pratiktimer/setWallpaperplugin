@@ -2,7 +2,7 @@
 
 wallpaper plugin to set wallpaper from url in android
 ## Usage
-To use this plugin, add `wallpaper: ^0.0.4` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
+To use this plugin, add `wallpaper: ^0.0.6` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
 
 ### Example
 
