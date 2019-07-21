@@ -4,11 +4,9 @@ import android.app.WallpaperManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
-import android.widget.ImageView;
 
-import com.squareup.picasso.Callback;
+import androidx.annotation.NonNull;
+
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 import java.io.IOException;
@@ -62,21 +60,25 @@ public class WallpaperPlugin implements MethodCallHandler {
     id=i;
     try {
       Picasso.get().load(path).into(new Target() {
-        @RequiresApi(api = Build.VERSION_CODES.N)
+
         @Override
         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
           WallpaperManager wallpaperManager = WallpaperManager.getInstance(activity);
           if (id == 1) {
-            try {
-              wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
+              try {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                      wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
+                  }
 
-            } catch (IOException ex) {
-              ex.printStackTrace();
-            }
+              } catch (IOException ex) {
+                  ex.printStackTrace();
+              }
           } else if (id == 2) {
             //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             try {
-              wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK);
+                }
 
 
             } catch (IOException e) {
