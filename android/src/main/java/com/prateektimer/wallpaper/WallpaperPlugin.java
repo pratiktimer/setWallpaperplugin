@@ -38,7 +38,7 @@ public class WallpaperPlugin implements MethodCallHandler {
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
       switch (call.method) {
           case "getPlatformVersion":
-              result.success("Asus Zenfone max pro m2" + Build.VERSION.RELEASE);
+              result.success("" + Build.VERSION.RELEASE);
               break;
           case "HomeScreen":
               setWallpaper(1, (String) call.arguments);
