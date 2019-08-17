@@ -1,6 +1,6 @@
 name: wallpaper
 description: wallpaper plugin to set wallpaper from url in android
-version: 0.0.8
+version: 0.0.9
 author: pratik banawalkar<pbanawalkar2@gmail.com>
 homepage: https://github.com/pratiktimer/setWallpaperplugin
 
@@ -10,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  dio: ^2.1.13
+  path_provider: ^1.2.0
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
 
