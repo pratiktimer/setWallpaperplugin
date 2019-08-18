@@ -30,10 +30,17 @@ class Wallpaper {
     return resultvar;
   }
 
+  static Future<String> systemScreen() async {
+    final String resultvar =
+    await _channel.invokeMethod('SystemWallpaer', 'myimage.jpeg');
+    return resultvar;
+  }
+
   static Stream<String> ImageDownloadProgress(String url) async* {
     StreamController<String> streamController = new StreamController();
     try {
-      final dir = await getTemporaryDirectory();
+      final dir = await getExternalStorageDirectory();
+      print(dir);
       Dio dio = new Dio();
       dio
           .download(

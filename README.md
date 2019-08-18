@@ -2,7 +2,7 @@
 
 wallpaper plugin to set wallpaper from url in android
 ## Usage
-To use this plugin, add `wallpaper: ^0.0.9` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
+To use this plugin, add `wallpaper: ^1.0.0` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
 
 ### Example
 
@@ -21,16 +21,22 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String home = "Home Screen", lock = "Lock Screen", both = "Both Screen";
+  String home = "Home Screen",
+      lock = "Lock Screen",
+      both = "Both Screen",
+      system="System";
+
   Stream<String> progressString;
   String res;
   bool downloading = false;
   List<String> images = [
     "https://images.pexels.com/photos/2772854/pexels-photo-2772854.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
     "https://images.pexels.com/photos/1368388/pexels-photo-1368388.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    "https://images.pexels.com/photos/2417842/pexels-photo-2417842.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+    "https://images.pexels.com/photos/2417842/pexels-photo-2417842.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+    "https://images.pexels.com/photos/2406776/pexels-photo-2406776.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
   ];
   var result = "Waiting to set wallpaper";
+
   @override
   void initState() {
     super.initState();
@@ -41,8 +47,14 @@ class _MyAppState extends State<MyApp> {
     return Scaffold(
       body: Container(
           margin: EdgeInsets.only(top: 20),
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
+          width: MediaQuery
+              .of(context)
+              .size
+              .width,
+          height: MediaQuery
+              .of(context)
+              .size
+              .height,
           child: SingleChildScrollView(
             child: Column(
               children: <Widget>[
@@ -211,6 +223,61 @@ class _MyAppState extends State<MyApp> {
                     Dialog()
                   ],
                 ),
+                Stack(
+                  children: <Widget>[
+                    Image.network(
+                      images[3],
+                      fit: BoxFit.fitWidth,
+                    ),
+                    Positioned(
+                      left: 10,
+                      bottom: 0,
+                      child: RaisedButton(
+                        onPressed: () {
+                          progressString =
+                              Wallpaper.ImageDownloadProgress(images[3]);
+                          progressString.listen((data) {
+                            setState(() {
+                              res = data;
+                              downloading = true;
+                            });
+                            print("DataReceived: " + data);
+                          }, onDone: () async {
+                            both = await Wallpaper.systemScreen();
+                            setState(() {
+                              downloading = false;
+                              system = system;
+                            });
+                            print("Task Done");
+                          }, onError: (error) {
+                            setState(() {
+                              downloading = false;
+                            });
+                            print("Some Error");
+                          });
+                        },
+                        textColor: Colors.white,
+                        padding: const EdgeInsets.all(0.0),
+                        child: Center(
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: <Color>[
+                                  Color(0xFF0D47A1),
+                                  Color(0xFF1976D2),
+                                  Color(0xFF42A5F5),
+                                ],
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(10.0),
+                            child: Text(system, style: TextStyle(fontSize: 14)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Dialog()
+                  ],
+                ),
               ],
             ),
           )),
@@ -223,23 +290,23 @@ class _MyAppState extends State<MyApp> {
       left: 70,
       child: downloading
           ? Container(
-              height: 120.0,
-              width: 200.0,
-              child: Card(
-                color: Colors.black,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    CircularProgressIndicator(),
-                    SizedBox(height: 20.0),
-                    Text(
-                      "Downloading File : $res",
-                      style: TextStyle(color: Colors.white),
-                    )
-                  ],
-                ),
-              ),
-            )
+        height: 120.0,
+        width: 200.0,
+        child: Card(
+          color: Colors.black,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              CircularProgressIndicator(),
+              SizedBox(height: 20.0),
+              Text(
+                "Downloading File : $res",
+                style: TextStyle(color: Colors.white),
+              )
+            ],
+          ),
+        ),
+      )
           : Text(""),
     );
   }
