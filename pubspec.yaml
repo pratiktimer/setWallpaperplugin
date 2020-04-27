@@ -5,13 +5,13 @@ author: pratik banawalkar<pbanawalkar2@gmail.com>
 homepage: https://github.com/pratiktimer/setWallpaperplugin
 
 environment:
-  sdk: ">=2.0.0-dev.68.0 <3.0.0"
+  sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^2.1.16
-  path_provider: ^1.3.0
+  dio: ^3.0.9
+  path_provider: ^1.6.7
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
 
