@@ -1,138 +1,98 @@
 package com.prateektimer.wallpaper;
+
 import android.Manifest;
 import android.app.WallpaperManager;
 import android.content.ActivityNotFoundException;
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
-import android.provider.MediaStore;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import java.io.File;
-import java.io.IOException;
 
 import io.flutter.Log;
 import io.flutter.app.FlutterActivity;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 
-/** WallpaperPlugin */
-public class WallpaperPlugin extends FlutterActivity implements MethodCallHandler {
-    public static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 123;
-    private final MethodChannel channel;
-    private int id;
-    private String res = "";
+import static com.prateektimer.wallpaper.WallpaperHelper.GetFile;
+import static com.prateektimer.wallpaper.WallpaperHelper.getImageContentUri;
+import static com.prateektimer.wallpaper.WallpaperHelper.resizeBitmap;
+
+public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, MethodCallHandler {
+
+    private MethodChannel channel;
     FlutterActivity activity;
-    private final Registrar mRegistrar;
+    io.flutter.plugin.common.PluginRegistry.Registrar mRegistrar;
+    WallpaperManager wallpaperManager;
+    private String res = "";
+    double maxWidth, maxHeight;
+    int options, location;
+    String imageName = "myimage";
 
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.channel.setMethodCallHandler(this);
-    }
-    private Context getActiveContext() {
-        return (mRegistrar.activity() != null) ? mRegistrar.activity() : mRegistrar.context();
-    }
-
-    /**
-     * HomeScreen
-     * Plugin registration.
-     */
-
-    public static void registerWith(Registrar registrar) {
-        final MethodChannel channel = new MethodChannel(registrar.messenger(), "wallpaper");
-        channel.setMethodCallHandler(new WallpaperPlugin((FlutterActivity) registrar.activity(), channel, registrar));
-    }
-
-    private WallpaperPlugin(FlutterActivity activity, MethodChannel channel, Registrar mRegistrar) {
-        this.activity = activity;
-        this.channel = channel;
-        this.mRegistrar = mRegistrar;
+    @SuppressWarnings("deprecation")
+    public static void registerWith(io.flutter.plugin.common.PluginRegistry.Registrar registrar) {
+        WallpaperPlugin instance = new WallpaperPlugin();
+        instance.channel = new MethodChannel(registrar.messenger(), "wallpaper");
+        instance.activity = (FlutterActivity) registrar.activity();
+        instance.mRegistrar = registrar;
+        instance.channel.setMethodCallHandler(instance);
     }
 
     @Override
-    public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+        channel = new MethodChannel(binding.getBinaryMessenger(), "wallpaper");
+        channel.setMethodCallHandler(this);
+    }
+
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        channel.setMethodCallHandler(null);
+        channel = null;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    @Override
+    public void onMethodCall(MethodCall call, @NonNull Result result) {
         switch (call.method) {
             case "getPlatformVersion":
                 result.success("" + Build.VERSION.RELEASE);
                 break;
             case "HomeScreen":
-                result.success(setWallpaper(1, (String) call.arguments));
+                maxWidth = call.argument("maxWidth");
+                maxHeight = call.argument("maxHeight");
+                options = call.argument("RequestSizeOptions");
+                location = call.argument("location");
+                imageName = call.argument("imageName");
+                result.success(setHomeScreen());
                 break;
             case "LockScreen":
-                result.success(setWallpaper(2, (String) call.arguments));
+                maxWidth = call.argument("maxWidth");
+                maxHeight = call.argument("maxHeight");
+                options = call.argument("RequestSizeOptions");
+                location = call.argument("location");
+                imageName = call.argument("imageName");
+                result.success(setLockScreen((int) maxWidth, (int) maxHeight, options));
                 break;
             case "Both":
-                result.success(setWallpaper(3, (String) call.arguments));
+                maxWidth = call.argument("maxWidth");
+                maxHeight = call.argument("maxHeight");
+                options = call.argument("RequestSizeOptions");
+                location = call.argument("location");
+                imageName = call.argument("imageName");
+                result.success(setHomeLockScreen((int) maxWidth, (int) maxHeight, options));
                 break;
-            case "SystemWallpaer":
-                result.success(setWallpaper(4,(String) call.arguments));
-                break;
-            default:
-                result.notImplemented();
-                break;
-        }
-    }
+            case "SystemWallpaper":
+                wallpaperManager = WallpaperManager.getInstance(activity);
+                location = call.argument("location");
 
-    private String setWallpaper(int i, String path) {
-        id = i;
-        WallpaperManager wallpaperManager = WallpaperManager.getInstance(activity);
-
-        File file = new File(activity.getExternalFilesDir(null),path);
-        //File file = new File(Activity.ge);
-        //Activity.getDir("flutter", 0).getPath()
-        // set bitmap to wallpaper
-        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-        if (id == 1) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
-                    res = "Home Screen Set Successfully";
-                } else {
-                    res = "To Set Home Screen Requires Api Level 24";
-                }
-
-
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        } else if (id == 2) try {
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK);
-                res = "Lock Screen Set Successfully";
-            } else {
-                res = "To Set Lock Screen Requires Api Level 24";
-            }
-
-
-        } catch (IOException e) {
-            res = e.toString();
-            e.printStackTrace();
-        }
-        else if (id == 3) {
-            try {
-                wallpaperManager.setBitmap(bitmap);
-                res = "Home And Lock Screen Set Successfully";
-            } catch (IOException e) {
-                res = e.toString();
-                e.printStackTrace();
-            }
-
-        }
-else if(id==4){
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED&&
                         activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -140,9 +100,8 @@ else if(id==4){
                     activity.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
                 }
                 else {
-                    Uri uri = Uri.fromFile(file);
-                    Uri contentURI = getImageContentUri(getActiveContext(), file);
-
+                    File file = GetFile(location,activity,imageName);
+                    Uri contentURI = getImageContentUri(activity,file);
                     Intent intent = new Intent(wallpaperManager.getCropAndSetWallpaperIntent(contentURI));
                     String mime = "image/*";
                     if (intent != null) {
@@ -152,41 +111,73 @@ else if(id==4){
                         mRegistrar.activity().startActivityForResult(intent,2);
                     } catch (ActivityNotFoundException e) {
                         //handle error
-                        res = "Error To Set Wallpaer";
+                        res = "Error To Set Wallpaper";
                     }
                 }
-            }
+                break;
+            default:
+                result.notImplemented();
+                break;
         }
-
-        return res;
     }
 
-    public static Uri getImageContentUri(Context context, File imageFile) {
-        String filePath = imageFile.getAbsolutePath();
-        Log.d("Tag",filePath);
-        Cursor cursor = context.getContentResolver().query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                new String[]{MediaStore.Images.Media._ID},
-                MediaStore.Images.Media.DATA + "=? ",
-                new String[]{filePath}, null);
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public String setHomeScreen() {
+        try {
 
-        if (cursor != null && cursor.moveToFirst()) {
-            int id = cursor.getInt(cursor
-                    .getColumnIndex(MediaStore.MediaColumns._ID));
-            Uri baseUri = Uri.parse("content://media/external/images/media");
-            return Uri.withAppendedPath(baseUri, "" + id);
-        } else {
-            if (imageFile.exists()) {
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.Images.Media.DATA, filePath);
-                return context.getContentResolver().insert(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            wallpaperManager = WallpaperManager.getInstance(activity);
+            File file = GetFile(location,activity,imageName);
+            if (file != null && file.exists()) {
+                Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
+                return "Home Screen Set Successfully";
             } else {
-                return null;
+                return "The Specified File Not Found";
             }
+
+        } catch (Exception exception) {
+            return exception.toString();
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public String setLockScreen(int reqWidth, int reqHeight, int options) {
+        try {
+
+            wallpaperManager = WallpaperManager.getInstance(activity);
+            File file = GetFile(location,activity,imageName);
+            if (file != null && file.exists()) {
+                Bitmap bitmap = resizeBitmap(file, reqWidth, reqHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK);
+                return "Lock Screen Set Successfully";
+            } else {
+                return "The Specified File Not Found";
+            }
+
+        } catch (Exception exception) {
+            return exception.toString();
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.N)
+    public String setHomeLockScreen(int reqWidth, int reqHeight, int options) {
+        try {
+
+            wallpaperManager = WallpaperManager.getInstance(activity);
+            File file = GetFile(location,activity,imageName);
+            if (file != null && file.exists()) {
+
+                Bitmap bitmap = resizeBitmap(file, reqWidth, reqHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
+                return "Home and Lock Screen Set Successfully";
+            } else {
+                return "The Specified File Not Found";
+            }
+
+        } catch (Exception exception) {
+            return exception.toString();
+        }
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d("Tag","resultcode="+resultCode+"requestcode="+requestCode);
@@ -194,11 +185,12 @@ else if(id==4){
             res = "System Screen Set Successfully";
         }
         else if(resultCode==RESULT_CANCELED){
-            res="setting Wallpaper Cancelled";
+            res="Setting Wallpaper Cancelled";
         }
         else{
             res = "Something Went Wrong";
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
+
 }

@@ -69,7 +69,15 @@ class _MyAppState extends State<MyApp> {
                             });
                             print("DataReceived: " + data);
                           }, onDone: () async {
-                            home = await Wallpaper.homeScreen();
+                            var width=  MediaQuery
+                                .of(context)
+                                .size
+                                .width;
+                            var height =  MediaQuery
+                                .of(context)
+                                .size
+                                .height;
+                            home = await Wallpaper.homeScreen(options: RequestSizeOptions.RESIZE_FIT);
                             setState(() {
                               downloading = false;
                               home = home;
@@ -226,7 +234,7 @@ class _MyAppState extends State<MyApp> {
                       child: RaisedButton(
                         onPressed: () {
                           progressString =
-                              Wallpaper.ImageDownloadProgress(images[3]);
+                              Wallpaper.ImageDownloadProgress(images[3],location:  DownloadLocation.APPLICATION_DIRECTORY);
                           progressString.listen((data) {
                             setState(() {
                               res = data;
@@ -234,7 +242,7 @@ class _MyAppState extends State<MyApp> {
                             });
                             print("DataReceived: " + data);
                           }, onDone: () async {
-                            both = await Wallpaper.systemScreen();
+                            both = await Wallpaper.systemScreen(location: DownloadLocation.APPLICATION_DIRECTORY);
                             setState(() {
                               downloading = false;
                               system = system;

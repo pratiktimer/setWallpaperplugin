@@ -4,6 +4,18 @@ import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+enum RequestSizeOptions {
+  RESIZE_FIT,
+  RESIZE_INSIDE,
+  RESIZE_EXACT,
+  RESIZE_CENTRE_CROP
+}
+enum DownloadLocation {
+  TEMPORARY_DIRECTORY,
+  APPLICATION_DIRECTORY,
+  EXTERNAL_DIRECTORY
+}
+
 class Wallpaper {
   static const MethodChannel _channel = const MethodChannel('wallpaper');
 
@@ -12,52 +24,97 @@ class Wallpaper {
     return version;
   }
 
-  static Future<String> homeScreen() async {
-    final String resultvar =
-    await _channel.invokeMethod('HomeScreen', 'myimage.jpeg');
+  static Future<String> homeScreen(
+      {String imageName = "myimage",
+      double width = 0,
+      double height = 0,
+      RequestSizeOptions options = RequestSizeOptions.RESIZE_EXACT,
+      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
+    final String resultvar = await _channel.invokeMethod('HomeScreen', {
+      'maxWidth': width,
+      'maxHeight': height,
+      'RequestSizeOptions': options.index,
+      'location': location.index,
+      'imageName': imageName
+    });
     return resultvar;
   }
 
-  static Future<String> lockScreen() async {
-    final String resultvar =
-    await _channel.invokeMethod('LockScreen', 'myimage.jpeg');
+  static Future<String> lockScreen(
+      {String imageName = "myimage",
+      double width = 0,
+      double height = 0,
+      RequestSizeOptions options = RequestSizeOptions.RESIZE_EXACT,
+      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
+    final String resultvar = await _channel.invokeMethod('LockScreen', {
+      'maxWidth': width,
+      'maxHeight': height,
+      'RequestSizeOptions': options.index,
+      'location': location.index,
+      'imageName': imageName
+    });
     return resultvar;
   }
 
-  static Future<String> bothScreen() async {
-    final String resultvar =
-    await _channel.invokeMethod('Both', 'myimage.jpeg');
+  static Future<String> bothScreen(
+      {String imageName = "myimage",
+      double width = 0,
+      double height = 0,
+      RequestSizeOptions options = RequestSizeOptions.RESIZE_EXACT,
+      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
+    final String resultvar = await _channel.invokeMethod('Both', {
+      'maxWidth': width,
+      'maxHeight': height,
+      'RequestSizeOptions': options.index,
+      'location': location.index,
+      'imageName': imageName
+    });
     return resultvar;
   }
 
-  static Future<String> systemScreen() async {
-    final String resultvar =
-    await _channel.invokeMethod('SystemWallpaer', 'myimage.jpeg');
+  static Future<String> systemScreen(
+      {DownloadLocation location =
+          DownloadLocation.TEMPORARY_DIRECTORY}) async {
+    final String resultvar = await _channel.invokeMethod('SystemWallpaper', {
+      'location': location.index,
+    });
     return resultvar;
   }
 
-  static Stream<String> ImageDownloadProgress(String url) async* {
+  static Stream<String> ImageDownloadProgress(String url,
+      {String imageName = 'myimage',
+      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async* {
     StreamController<String> streamController = new StreamController();
     try {
-      final dir = await getExternalStorageDirectory();
-      print(dir);
+      var dir;
+      switch (location) {
+        case DownloadLocation.TEMPORARY_DIRECTORY:
+          dir = await getTemporaryDirectory();
+          break;
+        case DownloadLocation.APPLICATION_DIRECTORY:
+          dir = await getApplicationSupportDirectory();
+          break;
+        default:
+          dir = await getExternalStorageDirectory();
+          break;
+      }
       Dio dio = new Dio();
       dio
           .download(
-        url,
-        "${dir.path}/myimage.jpeg",
-        onReceiveProgress: (int received, int total) {
-          streamController
-              .add(((received / total) * 100).toStringAsFixed(0) + "%");
-        },
-      )
+            url,
+            "${dir.path}/" + imageName + ".jpeg",
+            onReceiveProgress: (int received, int total) {
+              streamController
+                  .add(((received / total) * 100).toStringAsFixed(0) + "%");
+            },
+          )
           .then((Response response) {})
           .catchError((ex) {
-        streamController.add(ex.toString());
-      })
+            streamController.add(ex.toString());
+          })
           .whenComplete(() {
-        streamController.close();
-      });
+            streamController.close();
+          });
       yield* streamController.stream;
     } catch (ex) {
       throw ex;

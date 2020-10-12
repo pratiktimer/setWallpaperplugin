@@ -2,7 +2,7 @@
 
 wallpaper plugin to set wallpaper from url in android
 ## Usage
-To use this plugin, add `wallpaper: ^1.0.0` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
+To use this plugin, add `wallpaper: ^1.0.6` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
 
 ### Example
 
@@ -30,10 +30,10 @@ class _MyAppState extends State<MyApp> {
   String res;
   bool downloading = false;
   List<String> images = [
-    "https://images.pexels.com/photos/2772854/pexels-photo-2772854.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    "https://images.pexels.com/photos/1368388/pexels-photo-1368388.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    "https://images.pexels.com/photos/2417842/pexels-photo-2417842.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    "https://images.pexels.com/photos/2406776/pexels-photo-2406776.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+    "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/63fd4930-a5a7-4193-8899-4d98f8d8f640/d7z4roz-83fae3a1-6147-459a-9567-ecaaa71e32c5.jpg/v1/fill/w_233,h_350,q_70,strp/lonesome_lake__me_modeling__by_gestiefeltekatze_d7z4roz-350t.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOiIsImlzcyI6InVybjphcHA6Iiwib2JqIjpbW3siaGVpZ2h0IjoiPD05MDAiLCJwYXRoIjoiXC9mXC82M2ZkNDkzMC1hNWE3LTQxOTMtODg5OS00ZDk4ZjhkOGY2NDBcL2Q3ejRyb3otODNmYWUzYTEtNjE0Ny00NTlhLTk1NjctZWNhYWE3MWUzMmM1LmpwZyIsIndpZHRoIjoiPD02MDAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.stxfsYr5HNVZrDqAGTnldIRojCdQh4BZ-Sisy1ZU9B8",
+    "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/c441181a-5c01-4d2c-98fa-3546e0f90b98/dbdqoxj-1807b4cb-28f6-4827-86ca-ffe5e0466369.jpg/v1/fill/w_280,h_350,q_70,strp/yennefer_by_melamaika_dbdqoxj-350t.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOiIsImlzcyI6InVybjphcHA6Iiwib2JqIjpbW3siaGVpZ2h0IjoiPD0xMDA1IiwicGF0aCI6IlwvZlwvYzQ0MTE4MWEtNWMwMS00ZDJjLTk4ZmEtMzU0NmUwZjkwYjk4XC9kYmRxb3hqLTE4MDdiNGNiLTI4ZjYtNDgyNy04NmNhLWZmZTVlMDQ2NjM2OS5qcGciLCJ3aWR0aCI6Ijw9ODA1In1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmltYWdlLm9wZXJhdGlvbnMiXX0.psIqysnwqd34k-63vXc-fp-N0QKfhgx58UyRYa_p41E",
+    "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/5de16715-76bd-4cf7-bd5f-f12445a53f38/dbdecvm-afd763c3-d050-49f1-9794-e409270935b4.jpg/v1/fit/w_300,h_900,q_70,strp/butterflies_in_my_stomach_by_anyaanti_dbdecvm-300w.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOiIsImlzcyI6InVybjphcHA6Iiwib2JqIjpbW3siaGVpZ2h0IjoiPD05MDAiLCJwYXRoIjoiXC9mXC81ZGUxNjcxNS03NmJkLTRjZjctYmQ1Zi1mMTI0NDVhNTNmMzhcL2RiZGVjdm0tYWZkNzYzYzMtZDA1MC00OWYxLTk3OTQtZTQwOTI3MDkzNWI0LmpwZyIsIndpZHRoIjoiPD05MDAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.UVP-S5RXr2g404JUlQCddufehCrb2N5tXL6CwzBJ88g",
+    "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/c441181a-5c01-4d2c-98fa-3546e0f90b98/dbdqoxj-1807b4cb-28f6-4827-86ca-ffe5e0466369.jpg/v1/fill/w_280,h_350,q_70,strp/yennefer_by_melamaika_dbdqoxj-350t.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOiIsImlzcyI6InVybjphcHA6Iiwib2JqIjpbW3siaGVpZ2h0IjoiPD0xMDA1IiwicGF0aCI6IlwvZlwvYzQ0MTE4MWEtNWMwMS00ZDJjLTk4ZmEtMzU0NmUwZjkwYjk4XC9kYmRxb3hqLTE4MDdiNGNiLTI4ZjYtNDgyNy04NmNhLWZmZTVlMDQ2NjM2OS5qcGciLCJ3aWR0aCI6Ijw9ODA1In1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmltYWdlLm9wZXJhdGlvbnMiXX0.psIqysnwqd34k-63vXc-fp-N0QKfhgx58UyRYa_p41E"
   ];
   var result = "Waiting to set wallpaper";
 
@@ -78,6 +78,14 @@ class _MyAppState extends State<MyApp> {
                             });
                             print("DataReceived: " + data);
                           }, onDone: () async {
+                            var width=  MediaQuery
+                                .of(context)
+                                .size
+                                .width;
+                            var height =  MediaQuery
+                                .of(context)
+                                .size
+                                .height;
                             home = await Wallpaper.homeScreen();
                             setState(() {
                               downloading = false;
@@ -243,7 +251,7 @@ class _MyAppState extends State<MyApp> {
                             });
                             print("DataReceived: " + data);
                           }, onDone: () async {
-                            both = await Wallpaper.systemScreen();
+                            both = await Wallpaper.systemScreen(location: DownloadLocation.APPLICATION_DIRECTORY);
                             setState(() {
                               downloading = false;
                               system = system;
@@ -311,7 +319,6 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
-
 
 ```
 ## Getting Started
