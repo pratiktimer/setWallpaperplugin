@@ -129,8 +129,8 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
     public String setHomeScreen() {
         try {
 
-            wallpaperManager = WallpaperManager.getInstance(this);
-            File file = GetFile(location, this, imageName);
+            wallpaperManager = WallpaperManager.getInstance(context);
+            File file = GetFile(location, context, imageName);
             if (file != null && file.exists()) {
                 Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
                 wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
