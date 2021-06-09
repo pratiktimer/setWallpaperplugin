@@ -6,21 +6,20 @@ import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Rect;
 import android.net.Uri;
 import android.provider.MediaStore;
 
 import java.io.File;
 
 import io.flutter.Log;
-import io.flutter.app.FlutterActivity;
 
-public class WallpaperHelper {
+public final class WallpaperHelper
+{
     enum RequestSizeOptions {
         RESIZE_FIT,
         RESIZE_INSIDE,
         RESIZE_EXACT,
-        RESIZE_CENTRE_CROP;
+        RESIZE_CENTRE_CROP
     }
 
     public static int getScreenWidth(int reqWidth) {
@@ -35,46 +34,51 @@ public class WallpaperHelper {
         return reqHeight;
     }
 
-    static Bitmap resizeBitmap(File file, int reqWidth, int reqHeight, RequestSizeOptions options) {
+    static Bitmap resizeBitmap(File file, int maxWidth, int maxHeight, RequestSizeOptions options) {
         Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
         try {
-            reqWidth = getScreenWidth(reqWidth);
-            reqHeight = getScreenHeight(reqHeight);
-            if (reqWidth > 0 && reqHeight > 0 &&
+            maxWidth = getScreenWidth(maxWidth);
+            maxHeight = getScreenHeight(maxHeight);
+
+            if (maxWidth > 0 && maxHeight > 0 &&
                     (options == RequestSizeOptions.RESIZE_FIT ||
                             options == RequestSizeOptions.RESIZE_INSIDE ||
                             options == RequestSizeOptions.RESIZE_EXACT ||
                             options == RequestSizeOptions.RESIZE_CENTRE_CROP)) {
 
+
+                int width = bitmap.getWidth();
+                int height = bitmap.getHeight();
+                float ratioBitmap = (float) width / (float) height;
+                float ratioMax = (float) maxWidth / (float) maxHeight;
+
+                int finalWidth = maxWidth;
+                int finalHeight = maxHeight;
+
                 Bitmap resized = null;
                 if (options == RequestSizeOptions.RESIZE_EXACT) {
-                    resized = Bitmap.createScaledBitmap(bitmap, reqWidth, reqHeight, false);
+                    resized = Bitmap.createScaledBitmap(bitmap, width, height, false);
                 } else {
-                    int width = bitmap.getWidth();
-                    int height = bitmap.getHeight();
-                    float scale = Math.max(width / (float) reqWidth, height / (float) reqHeight);
-                    if (scale > 1 || options == RequestSizeOptions.RESIZE_FIT) {
-                        resized = Bitmap.createScaledBitmap(bitmap, (int) (width / scale), (int) (height / scale), false);
+
+                    if (ratioMax > ratioBitmap) {
+                        finalWidth = (int) ((float) maxHeight * ratioBitmap);
+                    } else {
+                        finalHeight = (int) ((float) maxWidth / ratioBitmap);
                     }
-                    if (scale > 1 || options == RequestSizeOptions.RESIZE_CENTRE_CROP) {
-                        int smaller_side = (height - width) > 0 ? width : height;
-                        int half_smaller_side = smaller_side / 2;
-                        Rect initialRect = new Rect(0, 0, width, height);
-                        Rect finalRect = new Rect(initialRect.centerX() - half_smaller_side, initialRect.centerY() - half_smaller_side,
-                                initialRect.centerX() + half_smaller_side, initialRect.centerY() + half_smaller_side);
-                        bitmap = Bitmap.createBitmap(bitmap, finalRect.left, finalRect.top, finalRect.width(), finalRect.height(), null, true);
-                        //keep in mind we have square as request for cropping, otherwise - it is useless
-                        resized = Bitmap.createScaledBitmap(bitmap, reqWidth, reqHeight, false);
-                    }
+                    bitmap = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, true);
 
                 }
+
                 if (resized != null) {
                     if (resized != bitmap) {
                         bitmap.recycle();
                     }
                     return resized;
                 }
+
             }
+            return bitmap;
+
         } catch (Exception e) {
             Log.w("AIC", "Failed to resize cropped image, return bitmap before resize", e);
         }
@@ -90,12 +94,17 @@ public class WallpaperHelper {
                 MediaStore.Images.Media.DATA + "=? ",
                 new String[]{filePath}, null);
 
-        if (cursor != null && cursor.moveToFirst()) {
+        if (cursor != null && cursor.moveToFirst())
+        {
             int id = cursor.getInt(cursor
                     .getColumnIndex(MediaStore.MediaColumns._ID));
             Uri baseUri = Uri.parse("content://media/external/images/media");
+
+            cursor.close();
             return Uri.withAppendedPath(baseUri, "" + id);
-        } else {
+        }
+        else
+        {
             if (imageFile.exists()) {
                 ContentValues values = new ContentValues();
                 values.put(MediaStore.Images.Media.DATA, filePath);
@@ -107,25 +116,20 @@ public class WallpaperHelper {
         }
     }
 
-    public static File GetFile(int location, FlutterActivity activity, String imageName) {
-        File file = null;
-        switch (location)
-        {
+    public static File GetFile(int location, Context activity, String imageName) {
+        File file;
+        switch (location) {
             case 0:
-                file = new File(activity.getCacheDir(),imageName + ".jpeg");
+                file = new File(activity.getCacheDir(), imageName + ".jpeg");
                 break;
             case 1:
-                file = new File(activity.getFilesDir(),imageName + ".jpeg");
+                file = new File(activity.getFilesDir(), imageName + ".jpeg");
                 break;
             case 2:
-                file= new File(activity.getExternalFilesDir(null), imageName + ".jpeg");
-                break;
             default:
-                file= new File(activity.getExternalFilesDir(null), imageName + ".jpeg");
+                file = new File(activity.getExternalFilesDir(null), imageName + ".jpeg");
                 break;
         }
-        return  file;
+        return file;
     }
-
-
 }

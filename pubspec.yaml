@@ -4,14 +4,14 @@ version: 1.0.6
 homepage: https://github.com/pratiktimer/setWallpaperplugin
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
-  flutter: ">=1.12.13+hotfix.5 <2.0.0"
+  sdk: ">=2.12.0 <3.0.0"
+  flutter: ">=1.12.13+hotfix.5"
 
 dependencies:
   flutter:
     sdk: flutter
-  dio: ^3.0.10
-  path_provider: ^1.6.18
+  dio: ^4.0.0
+  path_provider: ^2.0.2
 # For information on the generic Dart part of this file, see the
 # following page: https://www.dartlang.org/tools/pub/pubspec
 

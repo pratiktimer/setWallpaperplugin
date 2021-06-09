@@ -15,16 +15,16 @@ class _MyAppState extends State<MyApp> {
   String home = "Home Screen",
       lock = "Lock Screen",
       both = "Both Screen",
-      system="System";
+      system = "System";
 
   Stream<String> progressString;
   String res;
   bool downloading = false;
   List<String> images = [
-    "https://images.pexels.com/photos/2772854/pexels-photo-2772854.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    "https://images.pexels.com/photos/1368388/pexels-photo-1368388.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    "https://images.pexels.com/photos/2417842/pexels-photo-2417842.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    "https://images.pexels.com/photos/2406776/pexels-photo-2406776.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
+    "https://images.pexels.com/photos/1933873/pexels-photo-1933873.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+    "https://images.pexels.com/photos/838875/pexels-photo-838875.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+    "https://images.pexels.com/photos/838875/pexels-photo-838875.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+    "https://images.pexels.com/photos/838875/pexels-photo-838875.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500"
   ];
   var result = "Waiting to set wallpaper";
 
@@ -38,14 +38,8 @@ class _MyAppState extends State<MyApp> {
     return Scaffold(
       body: Container(
           margin: EdgeInsets.only(top: 20),
-          width: MediaQuery
-              .of(context)
-              .size
-              .width,
-          height: MediaQuery
-              .of(context)
-              .size
-              .height,
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
           child: SingleChildScrollView(
             child: Column(
               children: <Widget>[
@@ -69,15 +63,12 @@ class _MyAppState extends State<MyApp> {
                             });
                             print("DataReceived: " + data);
                           }, onDone: () async {
-                            var width=  MediaQuery
-                                .of(context)
-                                .size
-                                .width;
-                            var height =  MediaQuery
-                                .of(context)
-                                .size
-                                .height;
-                            home = await Wallpaper.homeScreen(options: RequestSizeOptions.RESIZE_FIT);
+                            var width = MediaQuery.of(context).size.width;
+                            var height = MediaQuery.of(context).size.height;
+                            home = await Wallpaper.homeScreen(
+                                options: RequestSizeOptions.RESIZE_FIT,
+                                width: width,
+                                height: height);
                             setState(() {
                               downloading = false;
                               home = home;
@@ -233,8 +224,9 @@ class _MyAppState extends State<MyApp> {
                       bottom: 0,
                       child: RaisedButton(
                         onPressed: () {
-                          progressString =
-                              Wallpaper.ImageDownloadProgress(images[3],location:  DownloadLocation.APPLICATION_DIRECTORY);
+                          progressString = Wallpaper.ImageDownloadProgress(
+                              images[3],
+                              location: DownloadLocation.APPLICATION_DIRECTORY);
                           progressString.listen((data) {
                             setState(() {
                               res = data;
@@ -242,7 +234,9 @@ class _MyAppState extends State<MyApp> {
                             });
                             print("DataReceived: " + data);
                           }, onDone: () async {
-                            both = await Wallpaper.systemScreen(location: DownloadLocation.APPLICATION_DIRECTORY);
+                            both = await Wallpaper.systemScreen(
+                                location:
+                                    DownloadLocation.APPLICATION_DIRECTORY);
                             setState(() {
                               downloading = false;
                               system = system;
@@ -289,23 +283,23 @@ class _MyAppState extends State<MyApp> {
       left: 70,
       child: downloading
           ? Container(
-        height: 120.0,
-        width: 200.0,
-        child: Card(
-          color: Colors.black,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              CircularProgressIndicator(),
-              SizedBox(height: 20.0),
-              Text(
-                "Downloading File : $res",
-                style: TextStyle(color: Colors.white),
-              )
-            ],
-          ),
-        ),
-      )
+              height: 120.0,
+              width: 200.0,
+              child: Card(
+                color: Colors.black,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    CircularProgressIndicator(),
+                    SizedBox(height: 20.0),
+                    Text(
+                      "Downloading File : $res",
+                      style: TextStyle(color: Colors.white),
+                    )
+                  ],
+                ),
+              ),
+            )
           : Text(""),
     );
   }

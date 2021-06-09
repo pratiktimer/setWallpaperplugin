@@ -10,6 +10,8 @@ enum RequestSizeOptions {
   RESIZE_EXACT,
   RESIZE_CENTRE_CROP
 }
+
+// This are the locations where image can be downloaded
 enum DownloadLocation {
   TEMPORARY_DIRECTORY,
   APPLICATION_DIRECTORY,
@@ -17,7 +19,7 @@ enum DownloadLocation {
 }
 
 class Wallpaper {
-  static const MethodChannel _channel = const MethodChannel('wallpaper');
+  static const MethodChannel _channel = const MethodChannel('com.prateektimer.wallpaper/wallpaper');
 
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
@@ -28,7 +30,7 @@ class Wallpaper {
       {String imageName = "myimage",
       double width = 0,
       double height = 0,
-      RequestSizeOptions options = RequestSizeOptions.RESIZE_EXACT,
+      RequestSizeOptions options = RequestSizeOptions.RESIZE_CENTRE_CROP,
       DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
     final String resultvar = await _channel.invokeMethod('HomeScreen', {
       'maxWidth': width,
@@ -83,7 +85,8 @@ class Wallpaper {
 
   static Stream<String> ImageDownloadProgress(String url,
       {String imageName = 'myimage',
-      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async* {
+      DownloadLocation location =
+          DownloadLocation.TEMPORARY_DIRECTORY}) async* {
     StreamController<String> streamController = new StreamController();
     try {
       var dir;
@@ -94,6 +97,7 @@ class Wallpaper {
         case DownloadLocation.APPLICATION_DIRECTORY:
           dir = await getApplicationSupportDirectory();
           break;
+        case DownloadLocation.EXTERNAL_DIRECTORY:
         default:
           dir = await getExternalStorageDirectory();
           break;
