@@ -1,4 +1,11 @@
 package com.prateektimer.wallpaper;
+
+import static android.app.WallpaperManager.FLAG_LOCK;
+import static android.app.WallpaperManager.FLAG_SYSTEM;
+import static com.prateektimer.wallpaper.WallpaperHelper.GetFile;
+import static com.prateektimer.wallpaper.WallpaperHelper.getImageContentUri;
+import static com.prateektimer.wallpaper.WallpaperHelper.resizeBitmap;
+
 import android.Manifest;
 import android.app.WallpaperManager;
 import android.content.ActivityNotFoundException;
@@ -8,31 +15,32 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+
 import java.io.File;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
-import static com.prateektimer.wallpaper.WallpaperHelper.GetFile;
-import static com.prateektimer.wallpaper.WallpaperHelper.getImageContentUri;
-import static com.prateektimer.wallpaper.WallpaperHelper.resizeBitmap;
 
 
-public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, MethodChannel.MethodCallHandler {
+public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, MethodChannel.MethodCallHandler, ActivityAware {
 
-    public  WallpaperPlugin(){}
-    private Context context;
-    private MethodChannel channel;
-       WallpaperManager wallpaperManager;
-    private String result = "";
+    WallpaperManager wallpaperManager;
     double maxWidth, maxHeight;
     int options, location;
     String imageName = "myimage";
+    private Context context;
+    private MethodChannel channel;
+    private String result = "";
+    private FlutterActivity activity;
+    public WallpaperPlugin() {
+    }
 
     @SuppressWarnings("deprecation")
     public static void registerWith(io.flutter.plugin.common.PluginRegistry.Registrar registrar) {
@@ -70,9 +78,9 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
                 options = call.argument("RequestSizeOptions");
                 location = call.argument("location");
                 imageName = call.argument("imageName");
+                imageName = imageName == null ? "myimage":imageName;
 
-                switch (call.method)
-                {
+                switch (call.method) {
                     case "HomeScreen":
                         result.success(setHomeScreen());
                         break;
@@ -89,6 +97,9 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
                 break;
             case "SystemWallpaper":
                 location = call.argument("location");
+                imageName = call.argument("imageName");
+                imageName = imageName == null ? "myimage":imageName;
+
                 result.success(setSystemWallpaper());
                 break;
             default:
@@ -98,29 +109,25 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
 
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
-    private String setSystemWallpaper() {
-        wallpaperManager = WallpaperManager.getInstance(context);
 
-        if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED &&
-                context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-        } else {
-            File file = GetFile(location, context, imageName);
-            Uri contentURI = getImageContentUri(this, file);
-            Intent intent = new Intent(wallpaperManager.getCropAndSetWallpaperIntent(contentURI));
-            String mime = "image/*";
-            if (intent != null) {
-                intent.setDataAndType(contentURI, mime);
-            }
-            try {
-                startActivityForResult(intent, 2);
-            } catch (ActivityNotFoundException e) {
-                //handle error
-                result = e.toString();
-            }
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    private String setSystemWallpaper()
+    {
+        wallpaperManager = WallpaperManager.getInstance(activity);
+
+        File file = GetFile(0, activity, imageName);
+        Uri contentURI = getImageContentUri(activity, file);
+        Intent intent = new Intent(wallpaperManager.getCropAndSetWallpaperIntent(contentURI));
+        String mime = "image/*";
+        intent.setDataAndType(contentURI, mime);
+        try
+        {   result = "System Screen Set Successfully";
+            activity.startActivityForResult(intent, 2);
+        }
+        catch (ActivityNotFoundException e)
+        {
+            //handle error
+            result = e.toString();
         }
         return result;
     }
@@ -133,7 +140,7 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
             File file = GetFile(location, context, imageName);
             if (file != null && file.exists()) {
                 Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
-                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
+                wallpaperManager.setBitmap(bitmap, null, true, FLAG_SYSTEM);
                 return "Home Screen Set Successfully";
             } else {
                 return "The Specified File Not Found";
@@ -151,8 +158,8 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
             wallpaperManager = WallpaperManager.getInstance(context);
             File file = GetFile(location, context, imageName);
             if (file != null && file.exists()) {
-                Bitmap bitmap = resizeBitmap(file, (int)maxWidth, (int)maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
-                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK);
+                Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                wallpaperManager.setBitmap(bitmap, null, true, FLAG_LOCK);
                 return "Lock Screen Set Successfully";
             } else {
                 return "The Specified File Not Found";
@@ -169,12 +176,15 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
 
             wallpaperManager = WallpaperManager.getInstance(context);
             File file = GetFile(location, context, imageName);
-            if (file != null && file.exists()) {
-
-                Bitmap bitmap = resizeBitmap(file, (int)maxWidth, (int)maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
-                wallpaperManager.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM);
+            if (file != null && file.exists())
+            {
+                Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                wallpaperManager.setBitmap(bitmap, null, true, FLAG_SYSTEM);
+                wallpaperManager.setBitmap(bitmap, null, true, FLAG_LOCK);
                 return "Home and Lock Screen Set Successfully";
-            } else {
+            }
+            else
+            {
                 return "The Specified File Not Found";
             }
 
@@ -186,15 +196,39 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
-        Log.d("Tag", "resultcode=" + resultCode + "requestcode=" + requestCode);
-        if (resultCode == RESULT_OK) {
+
+        if (resultCode == RESULT_OK)
+        {
             result = "System Screen Set Successfully";
-        } else if (resultCode == RESULT_CANCELED) {
+        }
+        else if (resultCode == RESULT_CANCELED)
+        {
             result = "Setting Wallpaper Cancelled";
-        } else {
+        }
+        else
+        {
             result = "Something Went Wrong";
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    @Override
+    public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+        activity = (FlutterActivity) binding.getActivity();
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
+
+    }
 }

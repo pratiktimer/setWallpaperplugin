@@ -1,27 +1,18 @@
 package com.prateektimer.wallpaper;
 
-import android.content.ContentValues;
+import static androidx.core.content.FileProvider.getUriForFile;
+
 import android.content.Context;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.provider.MediaStore;
 
 import java.io.File;
 
 import io.flutter.Log;
 
-public final class WallpaperHelper
-{
-    enum RequestSizeOptions {
-        RESIZE_FIT,
-        RESIZE_INSIDE,
-        RESIZE_EXACT,
-        RESIZE_CENTRE_CROP
-    }
-
+public final class WallpaperHelper {
     public static int getScreenWidth(int reqWidth) {
         if (reqWidth == 0)
             return Resources.getSystem().getDisplayMetrics().widthPixels;
@@ -85,36 +76,14 @@ public final class WallpaperHelper
         return bitmap;
     }
 
-    public static Uri getImageContentUri(Context context, File imageFile) {
-        String filePath = imageFile.getAbsolutePath();
-        Log.d("Tag", filePath);
-        Cursor cursor = context.getContentResolver().query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                new String[]{MediaStore.Images.Media._ID},
-                MediaStore.Images.Media.DATA + "=? ",
-                new String[]{filePath}, null);
+    public static Uri getImageContentUri(Context context, File file)
+    {
 
-        if (cursor != null && cursor.moveToFirst())
-        {
-            int id = cursor.getInt(cursor
-                    .getColumnIndex(MediaStore.MediaColumns._ID));
-            Uri baseUri = Uri.parse("content://media/external/images/media");
-
-            cursor.close();
-            return Uri.withAppendedPath(baseUri, "" + id);
-        }
-        else
-        {
-            if (imageFile.exists()) {
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.Images.Media.DATA, filePath);
-                return context.getContentResolver().insert(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-            } else {
-                return null;
-            }
-        }
+        Uri contentUri = getUriForFile(context, context.getPackageName(), file);
+        return contentUri;
     }
+
+
 
     public static File GetFile(int location, Context activity, String imageName) {
         File file;
@@ -131,5 +100,12 @@ public final class WallpaperHelper
                 break;
         }
         return file;
+    }
+
+    enum RequestSizeOptions {
+        RESIZE_FIT,
+        RESIZE_INSIDE,
+        RESIZE_EXACT,
+        RESIZE_CENTRE_CROP
     }
 }

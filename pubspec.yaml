@@ -1,6 +1,16 @@
 name: wallpaper
-description: wallpaper plugin to set wallpaper from url in android
-version: 1.0.6
+description: The Purpose of the plugin is to set wallpaper from url. Only supported to android.
+             Internally using WallpaperManager to set wallpaper.
+             Supported android version is 24 and above/.
+             Include them in your app manifest.
+             Requires Permissions =>
+                                    <uses-permission android:name="android.permission.INTERNET"/>
+                                    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+                                    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+                                    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+
+version: 1.0.8
 homepage: https://github.com/pratiktimer/setWallpaperplugin
 
 environment:

@@ -1,3 +1,3 @@
-## 1.0.5
+## 1.0.8
 
 * Set HomeScreen,LockScreen and Both Wallpapers in android
