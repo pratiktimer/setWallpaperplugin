@@ -2,8 +2,18 @@
 
 wallpaper plugin to set wallpaper from url in android
 ## Usage
-To use this plugin, add `wallpaper: ^1.0.8` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
-For using System Wallpaper you will need to add file_paths.xml in xml folder app>main>res>xml where downloaded image will be stored.
+To use this plugin, add `wallpaper: ^1.1.0` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
+1) For using System Wallpaper you will need to add file_paths.xml in xml folder 
+   app>main>res>xml where downloaded image will be stored.
+
+2) include this permission in your manifest
+<uses-permission android:name="android.permission.INTERNET"/>
+<uses-permission android:name="android.permission.SET_WALLPAPER" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+   
+3) also make sure you have internet connection on device.
 ### Example
 
   

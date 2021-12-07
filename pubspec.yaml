@@ -10,7 +10,7 @@ description: The Purpose of the plugin is to set wallpaper from url. Only suppor
                                     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
 
-version: 1.0.8
+version: 1.1.0
 homepage: https://github.com/pratiktimer/setWallpaperplugin
 
 environment:
