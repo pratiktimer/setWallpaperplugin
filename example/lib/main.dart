@@ -81,6 +81,7 @@ class _MyAppState extends State<MyApp> {
                           home = await Wallpaper.homeScreen(
                               options: RequestSizeOptions.resizeFit,
                               width: width,
+                              location: DownloadLocation.applicationDirectory,
                               height: height);
                           setState(() {
                             downloading = false;
@@ -94,7 +95,9 @@ class _MyAppState extends State<MyApp> {
                   onPressed: _isDisable
                       ? null
                       : () async {
-                          lock = await Wallpaper.lockScreen();
+                          lock = await Wallpaper.lockScreen(
+                            location: DownloadLocation.applicationDirectory,
+                          );
                           setState(() {
                             downloading = false;
                             lock = lock;
@@ -107,7 +110,9 @@ class _MyAppState extends State<MyApp> {
                   onPressed: _isDisable
                       ? null
                       : () async {
-                          both = await Wallpaper.bothScreen();
+                          both = await Wallpaper.bothScreen(
+                            location: DownloadLocation.applicationDirectory,
+                          );
                           setState(() {
                             downloading = false;
                             both = both;
@@ -120,7 +125,9 @@ class _MyAppState extends State<MyApp> {
                   onPressed: _isDisable
                       ? null
                       : () async {
-                          system = await Wallpaper.systemScreen();
+                          system = await Wallpaper.systemScreen(
+                            location: DownloadLocation.applicationDirectory,
+                          );
                           setState(() {
                             downloading = false;
                             system = system;
@@ -136,7 +143,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> downloadImage(BuildContext context) async {
-    progressString = Wallpaper.imageDownloadProgress(images[nextImageID]);
+    progressString = Wallpaper.imageDownloadProgress(
+      images[nextImageID],
+      location: DownloadLocation.applicationDirectory,
+    );
     progressString.listen((data) {
       setState(() {
         res = data;

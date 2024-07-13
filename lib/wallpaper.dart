@@ -119,6 +119,7 @@ class Wallpaper {
     return await WallpaperPlatform.instance.systemScreen(
       location: location,
       imageName: imageName,
+      fileExtension: fileExtension,
     );
   }
 

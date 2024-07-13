@@ -118,7 +118,7 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
     private String setSystemWallpaper() {
         wallpaperManager = WallpaperManager.getInstance(activity);
 
-        File file = GetFile(0, activity, imageName, fileExtension);
+        File file = GetFile(location, activity, imageName, fileExtension);
         Uri contentURI = getImageContentUri(activity, file);
         Intent intent = new Intent(wallpaperManager.getCropAndSetWallpaperIntent(contentURI));
         String mime = "image/*";

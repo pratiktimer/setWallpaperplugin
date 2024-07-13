@@ -116,6 +116,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
       dir ??= await getTemporaryDirectory();
       Dio dio = Dio();
       String fileName = _imageFormatToExtension(fileExtension);
+      print("${dir.path}/$imageName.$fileName");
       dio
           .download(
             url,
