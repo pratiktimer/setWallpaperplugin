@@ -2,7 +2,7 @@ name: wallpaper
 description: The Purpose of the plugin is to set wallpaper from url. Only supported to android.
   Internally using WallpaperManager to set wallpaper.
 
-version: 1.1.1
+version: 1.1.2
 homepage: https://github.com/pratiktimer/setWallpaperplugin
 
 
