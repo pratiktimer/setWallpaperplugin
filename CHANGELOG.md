@@ -1,3 +1,3 @@
-## 1.1.0
+## 1.1.2
 
-* Set HomeScreen,LockScreen and Both Wallpapers in android
+* TODO: Describe initial release.

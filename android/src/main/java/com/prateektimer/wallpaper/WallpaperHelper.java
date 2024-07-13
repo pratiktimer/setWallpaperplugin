@@ -85,14 +85,14 @@ public final class WallpaperHelper {
 
 
 
-    public static File GetFile(int location, Context activity, String imageName) {
+    public static File GetFile(int location, Context activity, String imageName, String ext) {
         File file;
         switch (location) {
             case 0:
-                file = new File(activity.getCacheDir(), imageName + ".jpeg");
+                file = new File(activity.getCacheDir(), imageName + "." +ext);
                 break;
             case 1:
-                file = new File(activity.getFilesDir(), imageName + ".jpeg");
+                file = new File(activity.getFilesDir(), imageName + "." +ext);
                 break;
             case 2:
             default:

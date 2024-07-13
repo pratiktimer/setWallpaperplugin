@@ -20,6 +20,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
 import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.flutter.embedding.android.FlutterActivity;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
@@ -28,18 +30,21 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 
-
 public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, MethodChannel.MethodCallHandler, ActivityAware {
 
     WallpaperManager wallpaperManager;
     double maxWidth, maxHeight;
     int options, location;
     String imageName = "myimage";
+    String fileExtension ="jpeg";
     private Context context;
     private MethodChannel channel;
     private String result = "";
     private FlutterActivity activity;
+    private ExecutorService executorService;
+
     public WallpaperPlugin() {
+        executorService = Executors.newSingleThreadExecutor();
     }
 
     @SuppressWarnings("deprecation")
@@ -78,17 +83,18 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
                 options = call.argument("RequestSizeOptions");
                 location = call.argument("location");
                 imageName = call.argument("imageName");
-                imageName = imageName == null ? "myimage":imageName;
+                imageName = imageName == null ? "myimage" : imageName;
+                fileExtension = call.argument("fileExtension");
 
                 switch (call.method) {
                     case "HomeScreen":
-                        result.success(setHomeScreen());
+                        setHomeScreen(result);
                         break;
                     case "LockScreen":
-                        result.success(setLockScreen());
+                        setLockScreen(result);
                         break;
                     case "Both":
-                        result.success(setHomeLockScreen());
+                        setHomeLockScreen(result);
                         break;
                     default:
                         result.notImplemented();
@@ -98,7 +104,7 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
             case "SystemWallpaper":
                 location = call.argument("location");
                 imageName = call.argument("imageName");
-                imageName = imageName == null ? "myimage":imageName;
+                imageName = imageName == null ? "myimage" : imageName;
 
                 result.success(setSystemWallpaper());
                 break;
@@ -106,107 +112,92 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
                 result.notImplemented();
                 break;
         }
-
     }
 
-
     @RequiresApi(api = Build.VERSION_CODES.M)
-    private String setSystemWallpaper()
-    {
+    private String setSystemWallpaper() {
         wallpaperManager = WallpaperManager.getInstance(activity);
 
-        File file = GetFile(0, activity, imageName);
+        File file = GetFile(0, activity, imageName, fileExtension);
         Uri contentURI = getImageContentUri(activity, file);
         Intent intent = new Intent(wallpaperManager.getCropAndSetWallpaperIntent(contentURI));
         String mime = "image/*";
         intent.setDataAndType(contentURI, mime);
-        try
-        {   result = "System Screen Set Successfully";
+        try {
+            result = "System Screen Set Successfully";
             activity.startActivityForResult(intent, 2);
-        }
-        catch (ActivityNotFoundException e)
-        {
-            //handle error
+        } catch (ActivityNotFoundException e) {
+            // handle error
             result = e.toString();
         }
         return result;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public String setHomeScreen() {
-        try {
-
-            wallpaperManager = WallpaperManager.getInstance(context);
-            File file = GetFile(location, context, imageName);
-            if (file != null && file.exists()) {
-                Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
-                wallpaperManager.setBitmap(bitmap, null, true, FLAG_SYSTEM);
-                return "Home Screen Set Successfully";
-            } else {
-                return "The Specified File Not Found";
+    public void setHomeScreen(@NonNull MethodChannel.Result result) {
+        executorService.submit(() -> {
+            try {
+                wallpaperManager = WallpaperManager.getInstance(context);
+                File file = GetFile(location, context, imageName, fileExtension);
+                if (file != null && file.exists()) {
+                    Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                    wallpaperManager.setBitmap(bitmap, null, true, FLAG_SYSTEM);
+                    result.success("Home Screen Set Successfully");
+                } else {
+                    result.error("FILE_NOT_FOUND", "The Specified File Not Found", null);
+                }
+            } catch (Exception exception) {
+                result.error("EXCEPTION", exception.toString(), null);
             }
-
-        } catch (Exception exception) {
-            return exception.toString();
-        }
+        });
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public String setLockScreen() {
-        try {
-
-            wallpaperManager = WallpaperManager.getInstance(context);
-            File file = GetFile(location, context, imageName);
-            if (file != null && file.exists()) {
-                Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
-                wallpaperManager.setBitmap(bitmap, null, true, FLAG_LOCK);
-                return "Lock Screen Set Successfully";
-            } else {
-                return "The Specified File Not Found";
+    public void setLockScreen(@NonNull MethodChannel.Result result) {
+        executorService.submit(() -> {
+            try {
+                wallpaperManager = WallpaperManager.getInstance(context);
+                File file = GetFile(location, context, imageName, fileExtension);
+                if (file != null && file.exists()) {
+                    Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                    wallpaperManager.setBitmap(bitmap, null, true, FLAG_LOCK);
+                    result.success("Lock Screen Set Successfully");
+                } else {
+                    result.error("FILE_NOT_FOUND", "The Specified File Not Found", null);
+                }
+            } catch (Exception exception) {
+                result.error("EXCEPTION", exception.toString(), null);
             }
-
-        } catch (Exception exception) {
-            return exception.toString();
-        }
+        });
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
-    public String setHomeLockScreen() {
-        try {
-
-            wallpaperManager = WallpaperManager.getInstance(context);
-            File file = GetFile(location, context, imageName);
-            if (file != null && file.exists())
-            {
-                Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
-                wallpaperManager.setBitmap(bitmap, null, true, FLAG_SYSTEM);
-                wallpaperManager.setBitmap(bitmap, null, true, FLAG_LOCK);
-                return "Home and Lock Screen Set Successfully";
+    public void setHomeLockScreen(@NonNull MethodChannel.Result result) {
+        executorService.submit(() -> {
+            try {
+                wallpaperManager = WallpaperManager.getInstance(context);
+                File file = GetFile(location, context, imageName, fileExtension);
+                if (file != null && file.exists()) {
+                    Bitmap bitmap = resizeBitmap(file, (int) maxWidth, (int) maxHeight, WallpaperHelper.RequestSizeOptions.values()[options]);
+                    wallpaperManager.setBitmap(bitmap, null, true, FLAG_SYSTEM);
+                    wallpaperManager.setBitmap(bitmap, null, true, FLAG_LOCK);
+                    result.success("Home and Lock Screen Set Successfully");
+                } else {
+                    result.error("FILE_NOT_FOUND", "The Specified File Not Found", null);
+                }
+            } catch (Exception exception) {
+                result.error("EXCEPTION", exception.toString(), null);
             }
-            else
-            {
-                return "The Specified File Not Found";
-            }
-
-        } catch (Exception exception) {
-            return exception.toString();
-        }
+        });
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
-
-        if (resultCode == RESULT_OK)
-        {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode == RESULT_OK) {
             result = "System Screen Set Successfully";
-        }
-        else if (resultCode == RESULT_CANCELED)
-        {
+        } else if (resultCode == RESULT_CANCELED) {
             result = "Setting Wallpaper Cancelled";
-        }
-        else
-        {
+        } else {
             result = "Something Went Wrong";
         }
         super.onActivityResult(requestCode, resultCode, data);
@@ -219,16 +210,13 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
-
     }
 
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-
     }
 
     @Override
     public void onDetachedFromActivity() {
-
     }
 }

@@ -1,150 +1,142 @@
 import 'dart:async';
+import 'package:wallpaper/wallpaper_platform_interface.dart';
 
-import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-
+/// Enum representing different options for resizing images.
 enum RequestSizeOptions {
-  RESIZE_FIT,
-  RESIZE_INSIDE,
-  RESIZE_EXACT,
-  RESIZE_CENTRE_CROP
+  /// Resize the image to fit within the specified dimensions while maintaining
+  /// the aspect ratio. Parts of the image may be letterboxed.
+  resizeFit,
+
+  /// Resize the image to fit within the specified dimensions while maintaining
+  /// the aspect ratio. The entire image is visible, but it may not fill the
+  /// specified dimensions.
+  resizeInside,
+
+  /// Resize the image exactly to the specified dimensions. The aspect ratio
+  /// may not be preserved, resulting in potential distortion.
+  resizeExact,
+
+  /// Resize the image to fill the specified dimensions while maintaining the
+  /// aspect ratio. The image is cropped to fill the specified dimensions,
+  /// with the focus centered.
+  resizeCentreCrop,
 }
 
-// This are the locations where image can be downloaded
+/// Enum representing different locations for downloading files.
 enum DownloadLocation {
-  TEMPORARY_DIRECTORY,
-  APPLICATION_DIRECTORY,
-  EXTERNAL_DIRECTORY
+  /// Download files to a temporary directory. Files in this location may be
+  /// automatically cleaned up by the system.
+  temporaryDirectory,
+
+  /// Download files to the application's internal directory. Files in this
+  /// location are private to the application and not accessible to other apps
+  /// or users.
+  applicationDirectory,
+
+  /// Download files to the external storage directory. Files in this location
+  /// are accessible to other applications and may require permissions.
+  externalDirectory,
 }
 
-class Wallpaper {
-  static const MethodChannel _channel =
-      const MethodChannel('com.prateektimer.wallpaper/wallpaper');
+/// Enum representing different image formats.
+enum ImageFormat {
+  /// JPEG image format.
+  jpeg,
 
-  static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
+  /// PNG image format.
+  png,
+}
+
+/// Utility class for setting wallpapers and managing wallpaper-related operations.
+class Wallpaper {
+  /// Retrieves the platform version.
+  static Future<String?> getPlatformVersion() async {
+    final version = await WallpaperPlatform.instance.getPlatformVersion();
     return version;
   }
 
-  // homeScreen is to set home screen
-  // imageName -> Name of the downloaded image to set as home screen
-  // width and height -> send the width and height to use while setting the image as wallpaper else will use the entire image as it is
-  // options to use when setting wallpaper RESIZE_FIT, RESIZE_INSIDE, RESIZE_EXACT,RESIZE_CENTRE_CROP
-  // loaction where the image is downloaded
-
-  static Future<String> homeScreen(
-      {String imageName = "myimage",
-      double width = 0,
-      double height = 0,
-      RequestSizeOptions options = RequestSizeOptions.RESIZE_CENTRE_CROP,
-      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
-    final String resultvar = await _channel.invokeMethod('HomeScreen', {
-      'maxWidth': width,
-      'maxHeight': height,
-      'RequestSizeOptions': options.index,
-      'location': location.index,
-      'imageName': imageName
-    });
-    return resultvar;
+  /// Sets the wallpaper for the home screen.
+  static Future<String> homeScreen({
+    String imageName = "myimage",
+    ImageFormat fileExtension = ImageFormat.jpeg,
+    double width = 0,
+    double height = 0,
+    RequestSizeOptions options = RequestSizeOptions.resizeCentreCrop,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) async {
+    return await WallpaperPlatform.instance.homeScreen(
+      width: width,
+      height: height,
+      options: options,
+      location: location,
+      imageName: imageName,
+      fileExtension: fileExtension,
+    );
   }
 
-  // lockScreen is to set lock screen
-  // imageName -> Name of the downloaded image to set as lock screen
-  // width and height -> send the width and height to use while setting the image as wallpaper else will use the entire image as it is
-  // options to use when setting wallpaper RESIZE_FIT, RESIZE_INSIDE, RESIZE_EXACT,RESIZE_CENTRE_CROP
-  // loaction where the image is downloaded
-  static Future<String> lockScreen(
-      {String imageName = "myimage",
-      double width = 0,
-      double height = 0,
-      RequestSizeOptions options = RequestSizeOptions.RESIZE_EXACT,
-      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
-    final String resultvar = await _channel.invokeMethod('LockScreen', {
-      'maxWidth': width,
-      'maxHeight': height,
-      'RequestSizeOptions': options.index,
-      'location': location.index,
-      'imageName': imageName
-    });
-    return resultvar;
+  /// Sets the wallpaper for the lock screen.
+  static Future<String> lockScreen({
+    String imageName = "myimage",
+    ImageFormat fileExtension = ImageFormat.jpeg,
+    double width = 0,
+    double height = 0,
+    RequestSizeOptions options = RequestSizeOptions.resizeExact,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) async {
+    return await WallpaperPlatform.instance.lockScreen(
+      width: width,
+      height: height,
+      options: options,
+      location: location,
+      imageName: imageName,
+    );
   }
 
-  // bothScreen is to set home and lock screen
-  // imageName -> Name of the downloaded image to set as both screen
-  // width and height -> send the width and height to use while setting the image as wallpaper else will use the entire image as it is
-  // options to use when setting wallpaper RESIZE_FIT, RESIZE_INSIDE, RESIZE_EXACT,RESIZE_CENTRE_CROP
-  // loaction where the image is downloaded
-  static Future<String> bothScreen(
-      {String imageName = "myimage",
-      double width = 0,
-      double height = 0,
-      RequestSizeOptions options = RequestSizeOptions.RESIZE_EXACT,
-      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
-    final String resultvar = await _channel.invokeMethod('Both', {
-      'maxWidth': width,
-      'maxHeight': height,
-      'RequestSizeOptions': options.index,
-      'location': location.index,
-      'imageName': imageName
-    });
-    return resultvar;
+  /// Sets the wallpaper for both the home and lock screens simultaneously.
+  static Future<String> bothScreen({
+    String imageName = "myimage",
+    ImageFormat fileExtension = ImageFormat.jpeg,
+    double width = 0,
+    double height = 0,
+    RequestSizeOptions options = RequestSizeOptions.resizeExact,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) async {
+    return await WallpaperPlatform.instance.bothScreen(
+      width: width,
+      height: height,
+      options: options,
+      location: location,
+      imageName: imageName,
+    );
   }
 
-  // systemScreen gives you the option to use default wallpaper system which allows you to set home, lock screen or both
-  // loaction where the image is downloaded
-  // Requires Read and Write Storage Permissions
-  static Future<String> systemScreen(
-      {String imageName = "myimage",
-      DownloadLocation location = DownloadLocation.TEMPORARY_DIRECTORY}) async {
-    final String resultvar = await _channel.invokeMethod('SystemWallpaper',
-        {'location': location.index, 'imageName': imageName});
-    return resultvar;
+  /// Sets the wallpaper using the system's default behavior.
+  static Future<String> systemScreen({
+    String imageName = "myimage",
+    ImageFormat fileExtension = ImageFormat.jpeg,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) async {
+    return await WallpaperPlatform.instance.systemScreen(
+      location: location,
+      imageName: imageName,
+    );
   }
 
-  // before using homeScreen, lockScreen , bothScreen, systemScreen . we need to download image .
-  // imageName -> after downloading image name to be saved so when using home screen, etc we can pass this name and
-  //  location
-  // loaction where the image is downloaded
-  static Stream<String> imageDownloadProgress(String url,
-      {String imageName = 'myimage',
-      DownloadLocation location =
-          DownloadLocation.TEMPORARY_DIRECTORY}) async* {
-    StreamController<String> streamController = new StreamController();
+  /// Retrieves a stream of download progress for an image.
+  static Stream<String> imageDownloadProgress(
+    String url, {
+    String imageName = 'myimage',
+    ImageFormat fileExtension = ImageFormat.jpeg,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) async* {
     try {
-      var dir;
-      switch (location) {
-        case DownloadLocation.APPLICATION_DIRECTORY:
-          dir = await getApplicationSupportDirectory();
-          break;
-        case DownloadLocation.EXTERNAL_DIRECTORY:
-          dir = await getExternalStorageDirectory();
-          break;
-        case DownloadLocation.TEMPORARY_DIRECTORY:
-        default:
-          dir = await getTemporaryDirectory();
-          break;
-      }
-      Dio dio = new Dio();
-      dio
-          .download(
-            url,
-            "${dir.path}/" + imageName + ".jpeg",
-            onReceiveProgress: (int received, int total) {
-              streamController
-                  .add(((received / total) * 100).toStringAsFixed(0) + "%");
-            },
-          )
-          .then((Response response) {})
-          .catchError((ex) {
-            streamController.add(ex.toString());
-          })
-          .whenComplete(() {
-            streamController.close();
-          });
-      yield* streamController.stream;
+      yield* WallpaperPlatform.instance.imageDownloadProgress(
+        url,
+        imageName: imageName,
+        location: location,
+      );
     } catch (ex) {
-      throw ex;
+      rethrow;
     }
   }
 }
