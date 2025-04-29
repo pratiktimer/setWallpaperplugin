@@ -6,12 +6,10 @@ import static com.prateektimer.wallpaper.WallpaperHelper.GetFile;
 import static com.prateektimer.wallpaper.WallpaperHelper.getImageContentUri;
 import static com.prateektimer.wallpaper.WallpaperHelper.resizeBitmap;
 
-import android.Manifest;
 import android.app.WallpaperManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -45,14 +43,6 @@ public class WallpaperPlugin extends FlutterActivity implements FlutterPlugin, M
 
     public WallpaperPlugin() {
         executorService = Executors.newSingleThreadExecutor();
-    }
-
-    @SuppressWarnings("deprecation")
-    public static void registerWith(io.flutter.plugin.common.PluginRegistry.Registrar registrar) {
-        WallpaperPlugin instance = new WallpaperPlugin();
-        instance.channel = new MethodChannel(registrar.messenger(), "com.prateektimer.wallpaper/wallpaper");
-        instance.channel.setMethodCallHandler(instance);
-        instance.context = registrar.context();
     }
 
     @Override
