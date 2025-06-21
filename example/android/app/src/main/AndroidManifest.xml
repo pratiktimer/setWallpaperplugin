@@ -1,13 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- The INTERNET permission is required for development. Specifically,
-     flutter needs it to communicate with the running application
-     to allow setting breakpoints, to provide hot reload, etc.
--->
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.SET_WALLPAPER" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <application
         android:label="wallpaper_example"
         android:name="${applicationName}"
@@ -39,15 +30,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="com.prateektimer.wallpaper_example"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

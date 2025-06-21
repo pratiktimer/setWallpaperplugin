@@ -1,20 +1,18 @@
-group = "com.prateektimer.wallpaper"
-version = "1.0-SNAPSHOT"
+group = "com.prateektimer.wallpaper.wallpaper"
+version = "1.0"
 
 buildscript {
-    ext.kotlin_version = "1.7.10"
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:7.3.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+        classpath("com.android.tools.build:gradle:8.7.3")
     }
 }
 
-allprojects {
+rootProject.allprojects {
     repositories {
         google()
         mavenCentral()
@@ -22,27 +20,15 @@ allprojects {
 }
 
 apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
 
 android {
-    if (project.android.hasProperty("namespace")) {
-        namespace = "com.prateektimer.wallpaper"
-    }
+    namespace = "com.prateektimer.wallpaper.wallpaper"
 
-    compileSdk = 34
+    compileSdk = 35
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
-    sourceSets {
-        main.java.srcDirs += "src/main/kotlin"
-        test.java.srcDirs += "src/test/kotlin"
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 
     defaultConfig {
@@ -50,14 +36,12 @@ android {
     }
 
     dependencies {
-        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("junit:junit:4.13.2")
         testImplementation("org.mockito:mockito-core:5.0.0")
     }
 
     testOptions {
         unitTests.all {
-            useJUnitPlatform()
-
             testLogging {
                events "passed", "skipped", "failed", "standardOut", "standardError"
                outputs.upToDateWhen {false}
