@@ -78,8 +78,7 @@ public final class WallpaperHelper {
 
     public static Uri getImageContentUri(Context context, File file)
     {
-
-        Uri contentUri = getUriForFile(context, context.getPackageName(), file);
+        Uri contentUri = getUriForFile(context, context.getPackageName() + ".com.prateektimer.wallpaper.provider", file);
         return contentUri;
     }
 

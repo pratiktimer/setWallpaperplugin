@@ -6,10 +6,12 @@ import static com.prateektimer.wallpaper.WallpaperHelper.GetFile;
 import static com.prateektimer.wallpaper.WallpaperHelper.getImageContentUri;
 import static com.prateektimer.wallpaper.WallpaperHelper.resizeBitmap;
 
+import android.Manifest;
 import android.app.WallpaperManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
