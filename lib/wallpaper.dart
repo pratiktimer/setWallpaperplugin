@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:flutter/services.dart';
 import 'package:wallpaper/wallpaper_platform_interface.dart';
 
 /// Enum representing different options for resizing images.
@@ -48,14 +50,38 @@ enum ImageFormat {
 }
 
 /// Utility class for setting wallpapers and managing wallpaper-related operations.
+///
+/// ## Error handling
+///
+/// Methods that call the platform (homeScreen, lockScreen, bothScreen, systemScreen,
+/// getPlatformVersion) may throw [PlatformException] when the platform returns an error.
+/// Use [PlatformException.code] for programmatic handling and [PlatformException.message]
+/// for user-facing text.
+///
+/// Common error codes (Android):
+/// - `FILE_NOT_FOUND` – Image file not found at the expected path; download the image first.
+/// - `DECODE_ERROR` – Image file could not be decoded (corrupted or unsupported format).
+/// - `STORAGE_UNAVAILABLE` – Storage path for the given [DownloadLocation] could not be resolved.
+/// - `SET_WALLPAPER_FAILED` – WallpaperManager failed to set the bitmap (e.g. I/O error).
+/// - `PERMISSION_DENIED` – Required permission (e.g. SET_WALLPAPER) was denied.
+/// - `INVALID_ARGUMENT` – Invalid [RequestSizeOptions] or [DownloadLocation] index.
+/// - `NO_ACTIVITY` – System wallpaper picker requires an activity; plugin not attached.
+/// - `ACTIVITY_NOT_FOUND` – No app on device to handle wallpaper crop/set.
+/// - `PLUGIN_DETACHED` – Plugin was detached from the engine before the call completed.
+/// - `DETACHED` – Activity was detached before system wallpaper selection completed.
 class Wallpaper {
   /// Retrieves the platform version.
+  ///
+  /// Throws [PlatformException] if the platform call fails (e.g. plugin not registered).
   static Future<String?> getPlatformVersion() async {
     final version = await WallpaperPlatform.instance.getPlatformVersion();
     return version;
   }
 
   /// Sets the wallpaper for the home screen.
+  ///
+  /// Throws [PlatformException] on failure; see class documentation for error codes
+  /// (e.g. `FILE_NOT_FOUND`, `DECODE_ERROR`, `PERMISSION_DENIED`).
   static Future<String> homeScreen({
     String imageName = "myimage",
     ImageFormat fileExtension = ImageFormat.jpeg,
@@ -75,6 +101,8 @@ class Wallpaper {
   }
 
   /// Sets the wallpaper for the lock screen.
+  ///
+  /// Throws [PlatformException] on failure; see class documentation for error codes.
   static Future<String> lockScreen({
     String imageName = "myimage",
     ImageFormat fileExtension = ImageFormat.jpeg,
@@ -89,10 +117,13 @@ class Wallpaper {
       options: options,
       location: location,
       imageName: imageName,
+      fileExtension: fileExtension,
     );
   }
 
   /// Sets the wallpaper for both the home and lock screens simultaneously.
+  ///
+  /// Throws [PlatformException] on failure; see class documentation for error codes.
   static Future<String> bothScreen({
     String imageName = "myimage",
     ImageFormat fileExtension = ImageFormat.jpeg,
@@ -107,10 +138,14 @@ class Wallpaper {
       options: options,
       location: location,
       imageName: imageName,
+      fileExtension: fileExtension,
     );
   }
 
-  /// Sets the wallpaper using the system's default behavior.
+  /// Sets the wallpaper using the system's default behavior (opens system picker).
+  ///
+  /// Throws [PlatformException] on failure; see class documentation for error codes
+  /// (e.g. `NO_ACTIVITY`, `FILE_NOT_FOUND`, `ACTIVITY_NOT_FOUND`).
   static Future<String> systemScreen({
     String imageName = "myimage",
     ImageFormat fileExtension = ImageFormat.jpeg,
@@ -124,6 +159,10 @@ class Wallpaper {
   }
 
   /// Retrieves a stream of download progress for an image.
+  ///
+  /// The stream may emit progress strings (e.g. "45%") and close on success, or
+  /// add an error if the download fails. Platform errors from the native side
+  /// are not used by this method (download runs in Dart); errors are generic.
   static Stream<String> imageDownloadProgress(
     String url, {
     String imageName = 'myimage',

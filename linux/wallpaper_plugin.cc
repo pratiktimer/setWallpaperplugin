@@ -64,9 +64,10 @@ void wallpaper_plugin_register_with_registrar(FlPluginRegistrar* registrar) {
       g_object_new(wallpaper_plugin_get_type(), nullptr));
 
   g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  // Fix: Use same channel name as Dart/Android so method calls are received.
   g_autoptr(FlMethodChannel) channel =
       fl_method_channel_new(fl_plugin_registrar_get_messenger(registrar),
-                            "wallpaper",
+                            "com.prateektimer.wallpaper/wallpaper",
                             FL_METHOD_CODEC(codec));
   fl_method_channel_set_method_call_handler(channel, method_call_cb,
                                             g_object_ref(plugin),

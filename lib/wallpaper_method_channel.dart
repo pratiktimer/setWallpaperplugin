@@ -11,6 +11,10 @@ import 'dart:async';
 import 'wallpaper_platform_interface.dart';
 
 /// An implementation of [WallpaperPlatform] that uses method channels.
+///
+/// Platform errors are reported as [PlatformException] with [PlatformException.code]
+/// and [PlatformException.message] set from the native side. Callers can use these
+/// for programmatic handling and user-facing messages.
 class MethodChannelWallpaper extends WallpaperPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
@@ -20,8 +24,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
 
   @override
   Future<String?> getPlatformVersion() async {
-    final version = await WallpaperPlatform.instance.getPlatformVersion();
-    return version;
+    return await methodChannel.invokeMethod<String>('getPlatformVersion');
   }
 
   @override
@@ -33,7 +36,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
     RequestSizeOptions options = RequestSizeOptions.resizeFit,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
   }) async {
-    final String resultvar = await methodChannel.invokeMethod('HomeScreen', {
+    final Object? raw = await methodChannel.invokeMethod('HomeScreen', {
       'maxWidth': width,
       'maxHeight': height,
       'RequestSizeOptions': options.index,
@@ -41,7 +44,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
       'imageName': imageName,
       'fileExtension': _imageFormatToExtension(fileExtension),
     });
-    return resultvar;
+    return _stringResult(raw, 'HomeScreen');
   }
 
   @override
@@ -53,7 +56,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
     RequestSizeOptions options = RequestSizeOptions.resizeFit,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
   }) async {
-    final String resultvar = await methodChannel.invokeMethod('LockScreen', {
+    final Object? raw = await methodChannel.invokeMethod('LockScreen', {
       'maxWidth': width,
       'maxHeight': height,
       'RequestSizeOptions': options.index,
@@ -61,7 +64,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
       'imageName': imageName,
       'fileExtension': _imageFormatToExtension(fileExtension),
     });
-    return resultvar;
+    return _stringResult(raw, 'LockScreen');
   }
 
   @override
@@ -73,7 +76,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
     RequestSizeOptions options = RequestSizeOptions.resizeFit,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
   }) async {
-    final String resultvar = await methodChannel.invokeMethod('Both', {
+    final Object? raw = await methodChannel.invokeMethod('Both', {
       'maxWidth': width,
       'maxHeight': height,
       'RequestSizeOptions': options.index,
@@ -81,7 +84,7 @@ class MethodChannelWallpaper extends WallpaperPlatform {
       'imageName': imageName,
       'fileExtension': _imageFormatToExtension(fileExtension),
     });
-    return resultvar;
+    return _stringResult(raw, 'Both');
   }
 
   @override
@@ -90,13 +93,29 @@ class MethodChannelWallpaper extends WallpaperPlatform {
     ImageFormat fileExtension = ImageFormat.jpeg,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
   }) async {
-    final String resultvar = await methodChannel
-        .invokeMethod('SystemWallpaper', {
-          'location': location.index,
-          'imageName': imageName,
-          'fileExtension': _imageFormatToExtension(fileExtension),
-        });
-    return resultvar;
+    final Object? raw = await methodChannel.invokeMethod('SystemWallpaper', {
+      'location': location.index,
+      'imageName': imageName,
+      'fileExtension': _imageFormatToExtension(fileExtension),
+    });
+    return _stringResult(raw, 'SystemWallpaper');
+  }
+
+  /// Ensures a non-null String result from platform; throws if null or not a string.
+  static String _stringResult(Object? value, String method) {
+    if (value == null) {
+      throw PlatformException(
+        code: 'INVALID_RESPONSE',
+        message: 'Platform returned null for $method',
+      );
+    }
+    if (value is! String) {
+      throw PlatformException(
+        code: 'INVALID_RESPONSE',
+        message: 'Platform returned unexpected type for $method: ${value.runtimeType}',
+      );
+    }
+    return value;
   }
 
   @override
@@ -110,6 +129,13 @@ class MethodChannelWallpaper extends WallpaperPlatform {
 
     (() async {
       try {
+        if (url.isEmpty) {
+          streamController.addError(
+            PlatformException(code: 'INVALID_ARGUMENT', message: 'URL must not be empty'),
+          );
+          streamController.close();
+          return;
+        }
         Directory dir;
         switch (location) {
           case DownloadLocation.applicationDirectory:

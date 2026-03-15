@@ -18,9 +18,10 @@ namespace wallpaper {
 // static
 void WallpaperPlugin::RegisterWithRegistrar(
     flutter::PluginRegistrarWindows *registrar) {
+  // Fix: Use same channel name as Dart/Android so method calls are received.
   auto channel =
       std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          registrar->messenger(), "wallpaper",
+          registrar->messenger(), "com.prateektimer.wallpaper/wallpaper",
           &flutter::StandardMethodCodec::GetInstance());
 
   auto plugin = std::make_unique<WallpaperPlugin>();

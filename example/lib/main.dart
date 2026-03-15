@@ -1,208 +1,213 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:wallpaper/wallpaper.dart';
 
-void main() =>
-    runApp(const MaterialApp(debugShowCheckedModeBanner: false, home: MyApp()));
+void main() {
+  runApp(const MyApp());
+}
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  MyAppState  createState() => MyAppState ();
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MyAppState  extends State<MyApp> {
-  String home = "Home Screen",
-      lock = "Lock Screen",
-      both = "Both Screen",
-      system = "System";
-
-  late Stream<String> progressString;
-  late String res;
-  bool downloading = false;
-  List<String> images = [
+class _MyAppState extends State<MyApp> {
+  final List<String> images = [
     "https://images.pexels.com/photos/1519753/pexels-photo-1519753.jpeg",
     "https://images.pexels.com/photos/1624496/pexels-photo-1624496.jpeg",
     "https://images.pexels.com/photos/1496373/pexels-photo-1496373.jpeg",
     "https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg",
-    "https://images.pexels.com/photos/1526713/pexels-photo-1526713.jpeg",
-    "https://images.pexels.com/photos/1535162/pexels-photo-1535162.jpeg",
-    "https://images.pexels.com/photos/2670898/pexels-photo-2670898.jpeg",
-    "https://images.pexels.com/photos/1366630/pexels-photo-1366630.jpeg",
   ];
-  var result = "Waiting to set wallpaper";
-  bool _isDisable = true;
 
-  int nextImageID = 0;
+  int currentIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
+  bool downloading = false;
+  bool imageReady = false;
+
+  String progress = "";
+  StreamSubscription? downloadSub;
+
+  String homeText = "Set Home Screen";
+  String lockText = "Set Lock Screen";
+  String bothText = "Set Both";
+  String systemText = "Set System";
+
+  String get currentImage => images[currentIndex];
+
+  void randomImage() {
+    setState(() {
+      currentIndex = Random().nextInt(images.length);
+      imageReady = false;
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        margin: const EdgeInsets.only(top: 20),
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height,
-        child: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              downloading
-                  ? imageDownloadDialog()
-                  : Image.network(images[nextImageID], fit: BoxFit.fitWidth),
-              ElevatedButton(
-                onPressed: () async {
-                  setState(() {
-                    nextImageID = Random().nextInt(images.length);
-                    _isDisable = true;
-                  });
-                },
-                child: const Text("Get Random Image"),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  return await downloadImage(context);
-                },
-                child: const Text("Please download the image"),
-              ),
-              ElevatedButton(
-                onPressed: _isDisable
-                    ? null
-                    : () async {
-                        var width = MediaQuery.of(context).size.width;
-                        var height = MediaQuery.of(context).size.height;
-                        home = await Wallpaper.homeScreen(
-                          options: RequestSizeOptions.resizeFit,
-                          width: width,
-                          location: DownloadLocation.applicationDirectory,
-                          height: height,
-                        );
-                        setState(() {
-                          downloading = false;
-                          home = home;
-                        });
-                        if (kDebugMode) {
-                          print("Task Done");
-                        }
-                      },
-                child: Text(home),
-              ),
-              ElevatedButton(
-                onPressed: _isDisable
-                    ? null
-                    : () async {
-                        lock = await Wallpaper.lockScreen(
-                          location: DownloadLocation.applicationDirectory,
-                        );
-                        setState(() {
-                          downloading = false;
-                          lock = lock;
-                        });
-                        if (kDebugMode) {
-                          print("Task Done");
-                        }
-                      },
-                child: Text(lock),
-              ),
-              ElevatedButton(
-                onPressed: _isDisable
-                    ? null
-                    : () async {
-                        both = await Wallpaper.bothScreen(
-                          location: DownloadLocation.applicationDirectory,
-                        );
-                        setState(() {
-                          downloading = false;
-                          both = both;
-                        });
-                        if (kDebugMode) {
-                          print("Task Done");
-                        }
-                      },
-                child: Text(both),
-              ),
-              ElevatedButton(
-                onPressed: _isDisable
-                    ? null
-                    : () async {
-                        system = await Wallpaper.systemScreen(
-                          location: DownloadLocation.applicationDirectory,
-                        );
-                        setState(() {
-                          downloading = false;
-                          system = system;
-                        });
-                        if (kDebugMode) {
-                          print("Task Done");
-                        }
-                      },
-                child: Text(system),
-              ),
-            ],
-          ),
+  Future<void> downloadImage() async {
+    setState(() {
+      downloading = true;
+      progress = "";
+    });
+
+    final stream = Wallpaper.imageDownloadProgress(
+      currentImage,
+      location: DownloadLocation.applicationDirectory,
+    );
+
+    downloadSub = stream.listen(
+      (data) {
+        setState(() {
+          progress = data;
+        });
+      },
+      onDone: () {
+        setState(() {
+          downloading = false;
+          imageReady = true;
+        });
+      },
+      onError: (_) {
+        setState(() {
+          downloading = false;
+          imageReady = false;
+        });
+      },
+    );
+  }
+
+  Future<void> setWallpaper(
+    Future<String> task,
+    Function(String) update,
+  ) async {
+    final result = await task;
+
+    setState(() {
+      update(result);
+    });
+  }
+
+  Widget actionButton({
+    required String text,
+    required VoidCallback? onPressed,
+  }) {
+    return ElevatedButton(onPressed: onPressed, child: Text(text));
+  }
+
+  Widget downloadIndicator() {
+    return Card(
+      color: Colors.black,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 10),
+            Text(
+              "Downloading: $progress",
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Future<void> downloadImage(BuildContext context) async {
-    progressString = Wallpaper.imageDownloadProgress(
-      images[nextImageID],
-      location: DownloadLocation.applicationDirectory,
-    );
-    progressString.listen(
-      (data) {
-        setState(() {
-          res = data;
-          downloading = true;
-        });
-        if (kDebugMode) {
-          print("DataReceived: $data");
-        }
-      },
-      onDone: () async {
-        setState(() {
-          downloading = false;
-          _isDisable = false;
-        });
-        if (kDebugMode) {
-          print("Task Done");
-        }
-      },
-      onError: (error) {
-        setState(() {
-          downloading = false;
-          _isDisable = true;
-        });
-        if (kDebugMode) {
-          print("Some Error");
-        }
-      },
-    );
+  @override
+  void dispose() {
+    downloadSub?.cancel();
+    super.dispose();
   }
 
-  Widget imageDownloadDialog() {
-    return SizedBox(
-      height: 120.0,
-      width: 200.0,
-      child: Card(
-        color: Colors.black,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 20.0),
-            Text(
-              "Downloading File : $res",
-              style: const TextStyle(color: Colors.white),
-            ),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBar(title: const Text("Wallpaper Example")),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              /// Image Preview
+              downloading
+                  ? downloadIndicator()
+                  : Center(
+                      child: SizedBox(
+                        width: 300,
+                        height: 200,
+                        child: Image.network(currentImage, fit: BoxFit.cover),
+                      ),
+                    ),
+
+              const SizedBox(height: 20),
+
+              /// Random Image
+              actionButton(text: "Random Image", onPressed: randomImage),
+
+              /// Download
+              actionButton(text: "Download Image", onPressed: downloadImage),
+
+              const Divider(),
+
+              /// Home Screen
+              actionButton(
+                text: homeText,
+                onPressed: imageReady
+                    ? () => setWallpaper(
+                        Wallpaper.homeScreen(
+                          width: width,
+                          height: height,
+                          options: RequestSizeOptions.resizeFit,
+                          location: DownloadLocation.applicationDirectory,
+                        ),
+                        (v) => homeText = v,
+                      )
+                    : null,
+              ),
+
+              /// Lock Screen
+              actionButton(
+                text: lockText,
+                onPressed: imageReady
+                    ? () => setWallpaper(
+                        Wallpaper.lockScreen(
+                          location: DownloadLocation.applicationDirectory,
+                        ),
+                        (v) => lockText = v,
+                      )
+                    : null,
+              ),
+
+              /// Both
+              actionButton(
+                text: bothText,
+                onPressed: imageReady
+                    ? () => setWallpaper(
+                        Wallpaper.bothScreen(
+                          location: DownloadLocation.applicationDirectory,
+                        ),
+                        (v) => bothText = v,
+                      )
+                    : null,
+              ),
+
+              /// System
+              actionButton(
+                text: systemText,
+                onPressed: imageReady
+                    ? () => setWallpaper(
+                        Wallpaper.systemScreen(
+                          location: DownloadLocation.applicationDirectory,
+                        ),
+                        (v) => systemText = v,
+                      )
+                    : null,
+              ),
+            ],
+          ),
         ),
       ),
     );

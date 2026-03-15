@@ -26,7 +26,14 @@ public final class WallpaperHelper {
     }
 
     static Bitmap resizeBitmap(File file, int maxWidth, int maxHeight, RequestSizeOptions options) {
+        if (file == null || options == null) {
+            return null;
+        }
         Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
+        // decodeFile can return null for invalid/unreadable images; avoid NPE.
+        if (bitmap == null) {
+            return null;
+        }
         try {
             maxWidth = getScreenWidth(maxWidth);
             maxHeight = getScreenHeight(maxHeight);
@@ -37,36 +44,31 @@ public final class WallpaperHelper {
                             options == RequestSizeOptions.RESIZE_EXACT ||
                             options == RequestSizeOptions.RESIZE_CENTRE_CROP)) {
 
-
                 int width = bitmap.getWidth();
                 int height = bitmap.getHeight();
                 float ratioBitmap = (float) width / (float) height;
                 float ratioMax = (float) maxWidth / (float) maxHeight;
 
-                int finalWidth = maxWidth;
-                int finalHeight = maxHeight;
+                int finalWidth = (int) maxWidth;
+                int finalHeight = (int) maxHeight;
 
                 Bitmap resized = null;
                 if (options == RequestSizeOptions.RESIZE_EXACT) {
-                    resized = Bitmap.createScaledBitmap(bitmap, width, height, false);
+                    // Fix: Scale to requested dimensions (finalWidth/finalHeight), not original width/height.
+                    resized = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, false);
+                    bitmap.recycle();
+                    return resized;
                 } else {
-
                     if (ratioMax > ratioBitmap) {
                         finalWidth = (int) ((float) maxHeight * ratioBitmap);
                     } else {
                         finalHeight = (int) ((float) maxWidth / ratioBitmap);
                     }
-                    bitmap = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, true);
-
+                    Bitmap scaled = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, true);
+                    // Fix: Recycle original to avoid bitmap memory leak.
+                    bitmap.recycle();
+                    return scaled;
                 }
-
-                if (resized != null) {
-                    if (resized != bitmap) {
-                        bitmap.recycle();
-                    }
-                    return resized;
-                }
-
             }
             return bitmap;
 
@@ -76,29 +78,48 @@ public final class WallpaperHelper {
         return bitmap;
     }
 
-    public static Uri getImageContentUri(Context context, File file)
-    {
-        Uri contentUri = getUriForFile(context, context.getPackageName() + ".com.prateektimer.wallpaper.provider", file);
-        return contentUri;
+    /**
+     * Returns a content URI for the given file for use with FileProvider.
+     * Returns null if context or file is null, or if the provider authority is not available.
+     */
+    public static Uri getImageContentUri(Context context, File file) {
+        if (context == null || file == null) {
+            return null;
+        }
+        try {
+            String authority = context.getPackageName() + ".com.prateektimer.wallpaper.provider";
+            return getUriForFile(context, authority, file);
+        } catch (IllegalArgumentException e) {
+            Log.w("WallpaperHelper", "FileProvider failed for file: " + file.getPath(), e);
+            return null;
+        }
     }
 
-
-
+    /**
+     * Resolves the file path for the given download location. Returns null if context is null
+     * or if the requested storage directory is not available (e.g. external storage unmounted).
+     */
     public static File GetFile(int location, Context activity, String imageName, String ext) {
-        File file;
+        if (activity == null || imageName == null || ext == null) {
+            return null;
+        }
+        File dir;
         switch (location) {
             case 0:
-                file = new File(activity.getCacheDir(), imageName + "." +ext);
+                dir = activity.getCacheDir();
                 break;
             case 1:
-                file = new File(activity.getFilesDir(), imageName + "." +ext);
+                dir = activity.getFilesDir();
                 break;
             case 2:
             default:
-                file = new File(activity.getExternalFilesDir(null), imageName + ".jpeg");
+                dir = activity.getExternalFilesDir(null);
                 break;
         }
-        return file;
+        if (dir == null) {
+            return null;
+        }
+        return new File(dir, imageName + "." + ext);
     }
 
     enum RequestSizeOptions {
