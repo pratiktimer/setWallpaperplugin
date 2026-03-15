@@ -237,4 +237,90 @@ void main() {
       expect(ImageFormat.png.index, 1);
     });
   });
+
+  group('Improved API (setWallpaper, options)', () {
+    test('setWallpaper(home, options) invokes HomeScreen with options', () async {
+      String? method;
+      Map<Object?, Object?>? args;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channel, (MethodCall call) async {
+        method = call.method;
+        args = call.arguments as Map<Object?, Object?>?;
+        return 'Home Screen Set Successfully';
+      });
+
+      const opts = SetWallpaperOptions(
+        imageName: 'opttest',
+        fileExtension: ImageFormat.png,
+        width: 100,
+        height: 200,
+        resizeOption: RequestSizeOptions.resizeExact,
+        location: DownloadLocation.applicationDirectory,
+      );
+
+      final result = await Wallpaper.setWallpaper(WallpaperTarget.home, opts);
+      expect(method, 'HomeScreen');
+      expect(args, isNotNull);
+      final a = args!;
+      expect(a['imageName'], 'opttest');
+      expect(a['fileExtension'], 'png');
+      expect(a['maxWidth'], 100.0);
+      expect(a['maxHeight'], 200.0);
+      expect(a['RequestSizeOptions'], RequestSizeOptions.resizeExact.index);
+      expect(a['location'], DownloadLocation.applicationDirectory.index);
+      expect(result, 'Home Screen Set Successfully');
+    });
+
+    test('setWallpaper(lock, options) invokes LockScreen', () async {
+      String? method;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channel, (MethodCall call) async {
+        method = call.method;
+        return 'Lock Screen Set Successfully';
+      });
+
+      final result = await Wallpaper.setWallpaper(
+        WallpaperTarget.lock,
+        const SetWallpaperOptions(imageName: 'lockopt'),
+      );
+      expect(method, 'LockScreen');
+      expect(result, 'Lock Screen Set Successfully');
+    });
+
+    test('setWallpaper(both, options) invokes Both', () async {
+      String? method;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channel, (MethodCall call) async {
+        method = call.method;
+        return 'Home and Lock Screen Set Successfully';
+      });
+
+      final result = await Wallpaper.setWallpaper(
+        WallpaperTarget.both,
+        const SetWallpaperOptions(),
+      );
+      expect(method, 'Both');
+      expect(result, 'Home and Lock Screen Set Successfully');
+    });
+
+    test('systemScreenWithOptions invokes SystemWallpaper with options', () async {
+      Map<Object?, Object?>? args;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(_channel, (MethodCall call) async {
+        args = call.arguments as Map<Object?, Object?>?;
+        return 'OK';
+      });
+
+      await Wallpaper.systemScreenWithOptions(const SystemWallpaperOptions(
+        imageName: 'sysopt',
+        fileExtension: ImageFormat.png,
+        location: DownloadLocation.externalDirectory,
+      ));
+      expect(args, isNotNull);
+      final a = args!;
+      expect(a['imageName'], 'sysopt');
+      expect(a['fileExtension'], 'png');
+      expect(a['location'], DownloadLocation.externalDirectory.index);
+    });
+  });
 }

@@ -1,182 +1,225 @@
+// Copyright 2013 The Flutter Authors. All rights reserved.
+// Use of this file is governed by a BSD-style license.
+
 import 'dart:async';
 
 import 'package:flutter/services.dart';
-import 'package:wallpaper/wallpaper_platform_interface.dart';
 
-/// Enum representing different options for resizing images.
-enum RequestSizeOptions {
-  /// Resize the image to fit within the specified dimensions while maintaining
-  /// the aspect ratio. Parts of the image may be letterboxed.
-  resizeFit,
+import 'src/wallpaper_enums.dart';
+import 'src/wallpaper_platform_interface.dart';
 
-  /// Resize the image to fit within the specified dimensions while maintaining
-  /// the aspect ratio. The entire image is visible, but it may not fill the
-  /// specified dimensions.
-  resizeInside,
+// Re-export enums and platform interface for public use and testing.
+export 'src/wallpaper_enums.dart' show RequestSizeOptions, DownloadLocation, ImageFormat;
+export 'src/wallpaper_platform_interface.dart' show WallpaperPlatform;
 
-  /// Resize the image exactly to the specified dimensions. The aspect ratio
-  /// may not be preserved, resulting in potential distortion.
-  resizeExact,
+/// Target screen when setting wallpaper (for [Wallpaper.setWallpaper]).
+enum WallpaperTarget {
+  /// Home screen only.
+  home,
 
-  /// Resize the image to fill the specified dimensions while maintaining the
-  /// aspect ratio. The image is cropped to fill the specified dimensions,
-  /// with the focus centered.
-  resizeCentreCrop,
+  /// Lock screen only.
+  lock,
+
+  /// Both home and lock screen.
+  both,
 }
 
-/// Enum representing different locations for downloading files.
-enum DownloadLocation {
-  /// Download files to a temporary directory. Files in this location may be
-  /// automatically cleaned up by the system.
-  temporaryDirectory,
+/// Options for setting wallpaper (home, lock, or both).
+///
+/// Use with [Wallpaper.setWallpaper] for a single, strongly-typed call.
+/// All fields have defaults; only override what you need.
+class SetWallpaperOptions {
+  const SetWallpaperOptions({
+    this.imageName = 'myimage',
+    this.fileExtension = ImageFormat.jpeg,
+    this.width = 0,
+    this.height = 0,
+    this.resizeOption = RequestSizeOptions.resizeCentreCrop,
+    this.location = DownloadLocation.temporaryDirectory,
+  });
 
-  /// Download files to the application's internal directory. Files in this
-  /// location are private to the application and not accessible to other apps
-  /// or users.
-  applicationDirectory,
+  /// Basename of the downloaded image file (without extension).
+  final String imageName;
 
-  /// Download files to the external storage directory. Files in this location
-  /// are accessible to other applications and may require permissions.
-  externalDirectory,
+  /// Image format (determines file extension).
+  final ImageFormat fileExtension;
+
+  /// Max width for resize; 0 means use screen width.
+  final double width;
+
+  /// Max height for resize; 0 means use screen height.
+  final double height;
+
+  /// How to resize the image to fit the screen.
+  final RequestSizeOptions resizeOption;
+
+  /// Where the image was downloaded (must match [Wallpaper.imageDownloadProgress]).
+  final DownloadLocation location;
 }
 
-/// Enum representing different image formats.
-enum ImageFormat {
-  /// JPEG image format.
-  jpeg,
+/// Options for the system wallpaper picker (crop/set UI).
+class SystemWallpaperOptions {
+  const SystemWallpaperOptions({
+    this.imageName = 'myimage',
+    this.fileExtension = ImageFormat.jpeg,
+    this.location = DownloadLocation.temporaryDirectory,
+  });
 
-  /// PNG image format.
-  png,
+  final String imageName;
+  final ImageFormat fileExtension;
+  final DownloadLocation location;
 }
 
-/// Utility class for setting wallpapers and managing wallpaper-related operations.
+/// Public API for setting wallpapers and downloading images.
 ///
-/// ## Error handling
+/// **Architecture:**
+/// - This class is the only public entry point. It delegates to [WallpaperPlatform.instance].
+/// - Platform-specific code lives in [WallpaperPlatform] implementations (see [MethodChannelWallpaper] in `src/`).
+/// - All options use strongly typed enums ([RequestSizeOptions], [DownloadLocation], [ImageFormat]); no raw strings for these.
 ///
-/// Methods that call the platform (homeScreen, lockScreen, bothScreen, systemScreen,
-/// getPlatformVersion) may throw [PlatformException] when the platform returns an error.
-/// Use [PlatformException.code] for programmatic handling and [PlatformException.message]
-/// for user-facing text.
+/// **Backward compatibility:** [homeScreen], [lockScreen], [bothScreen], [systemScreen], [imageDownloadProgress],
+/// and [getPlatformVersion] keep the same signatures and behavior. The new [setWallpaper] and [systemScreenWithOptions]
+/// methods offer a cleaner API using [SetWallpaperOptions] and [SystemWallpaperOptions].
 ///
-/// Common error codes (Android):
-/// - `FILE_NOT_FOUND` – Image file not found at the expected path; download the image first.
-/// - `DECODE_ERROR` – Image file could not be decoded (corrupted or unsupported format).
-/// - `STORAGE_UNAVAILABLE` – Storage path for the given [DownloadLocation] could not be resolved.
-/// - `SET_WALLPAPER_FAILED` – WallpaperManager failed to set the bitmap (e.g. I/O error).
-/// - `PERMISSION_DENIED` – Required permission (e.g. SET_WALLPAPER) was denied.
-/// - `INVALID_ARGUMENT` – Invalid [RequestSizeOptions] or [DownloadLocation] index.
-/// - `NO_ACTIVITY` – System wallpaper picker requires an activity; plugin not attached.
-/// - `ACTIVITY_NOT_FOUND` – No app on device to handle wallpaper crop/set.
-/// - `PLUGIN_DETACHED` – Plugin was detached from the engine before the call completed.
-/// - `DETACHED` – Activity was detached before system wallpaper selection completed.
+/// **Errors:** Methods throw [PlatformException] on failure. Use [PlatformException.code] and [PlatformException.message].
+/// Common codes: `FILE_NOT_FOUND`, `DECODE_ERROR`, `STORAGE_UNAVAILABLE`, `SET_WALLPAPER_FAILED`, `PERMISSION_DENIED`,
+/// `INVALID_ARGUMENT`, `NO_ACTIVITY`, `ACTIVITY_NOT_FOUND`, `PLUGIN_DETACHED`, `DETACHED`.
 class Wallpaper {
-  /// Retrieves the platform version.
+  Wallpaper._();
+
+  static final WallpaperPlatform _platform = WallpaperPlatform.instance;
+
+  /// Returns the platform version string, or null if unavailable.
   ///
-  /// Throws [PlatformException] if the platform call fails (e.g. plugin not registered).
-  static Future<String?> getPlatformVersion() async {
-    final version = await WallpaperPlatform.instance.getPlatformVersion();
-    return version;
+  /// Throws [PlatformException] if the platform call fails.
+  static Future<String?> getPlatformVersion() => _platform.getPlatformVersion();
+
+  /// Sets the wallpaper for the given [target] using [options].
+  ///
+  /// **Improved API:** Prefer this over [homeScreen]/[lockScreen]/[bothScreen] when
+  /// you have an [SetWallpaperOptions] object or want a single call for any target.
+  static Future<String> setWallpaper(WallpaperTarget target, SetWallpaperOptions options) {
+    switch (target) {
+      case WallpaperTarget.home:
+        return _platform.homeScreen(
+          imageName: options.imageName,
+          fileExtension: options.fileExtension,
+          width: options.width,
+          height: options.height,
+          options: options.resizeOption,
+          location: options.location,
+        );
+      case WallpaperTarget.lock:
+        return _platform.lockScreen(
+          imageName: options.imageName,
+          fileExtension: options.fileExtension,
+          width: options.width,
+          height: options.height,
+          options: options.resizeOption,
+          location: options.location,
+        );
+      case WallpaperTarget.both:
+        return _platform.bothScreen(
+          imageName: options.imageName,
+          fileExtension: options.fileExtension,
+          width: options.width,
+          height: options.height,
+          options: options.resizeOption,
+          location: options.location,
+        );
+    }
   }
 
-  /// Sets the wallpaper for the home screen.
+  /// Sets the home screen wallpaper. [imageName] and [location] must match the download.
   ///
-  /// Throws [PlatformException] on failure; see class documentation for error codes
-  /// (e.g. `FILE_NOT_FOUND`, `DECODE_ERROR`, `PERMISSION_DENIED`).
+  /// Throws [PlatformException] on failure (e.g. `FILE_NOT_FOUND`, `DECODE_ERROR`).
   static Future<String> homeScreen({
-    String imageName = "myimage",
+    String imageName = 'myimage',
     ImageFormat fileExtension = ImageFormat.jpeg,
     double width = 0,
     double height = 0,
     RequestSizeOptions options = RequestSizeOptions.resizeCentreCrop,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
-  }) async {
-    return await WallpaperPlatform.instance.homeScreen(
-      width: width,
-      height: height,
-      options: options,
-      location: location,
-      imageName: imageName,
-      fileExtension: fileExtension,
-    );
-  }
+  }) =>
+      _platform.homeScreen(
+        imageName: imageName,
+        fileExtension: fileExtension,
+        width: width,
+        height: height,
+        options: options,
+        location: location,
+      );
 
-  /// Sets the wallpaper for the lock screen.
-  ///
-  /// Throws [PlatformException] on failure; see class documentation for error codes.
+  /// Sets the lock screen wallpaper.
   static Future<String> lockScreen({
-    String imageName = "myimage",
+    String imageName = 'myimage',
     ImageFormat fileExtension = ImageFormat.jpeg,
     double width = 0,
     double height = 0,
     RequestSizeOptions options = RequestSizeOptions.resizeExact,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
-  }) async {
-    return await WallpaperPlatform.instance.lockScreen(
-      width: width,
-      height: height,
-      options: options,
-      location: location,
-      imageName: imageName,
-      fileExtension: fileExtension,
-    );
-  }
+  }) =>
+      _platform.lockScreen(
+        imageName: imageName,
+        fileExtension: fileExtension,
+        width: width,
+        height: height,
+        options: options,
+        location: location,
+      );
 
-  /// Sets the wallpaper for both the home and lock screens simultaneously.
-  ///
-  /// Throws [PlatformException] on failure; see class documentation for error codes.
+  /// Sets both home and lock screen to the same image.
   static Future<String> bothScreen({
-    String imageName = "myimage",
+    String imageName = 'myimage',
     ImageFormat fileExtension = ImageFormat.jpeg,
     double width = 0,
     double height = 0,
     RequestSizeOptions options = RequestSizeOptions.resizeExact,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
-  }) async {
-    return await WallpaperPlatform.instance.bothScreen(
-      width: width,
-      height: height,
-      options: options,
-      location: location,
-      imageName: imageName,
-      fileExtension: fileExtension,
-    );
-  }
+  }) =>
+      _platform.bothScreen(
+        imageName: imageName,
+        fileExtension: fileExtension,
+        width: width,
+        height: height,
+        options: options,
+        location: location,
+      );
 
-  /// Sets the wallpaper using the system's default behavior (opens system picker).
-  ///
-  /// Throws [PlatformException] on failure; see class documentation for error codes
-  /// (e.g. `NO_ACTIVITY`, `FILE_NOT_FOUND`, `ACTIVITY_NOT_FOUND`).
+  /// Opens the system wallpaper picker (crop/set). Requires activity on Android.
   static Future<String> systemScreen({
-    String imageName = "myimage",
+    String imageName = 'myimage',
     ImageFormat fileExtension = ImageFormat.jpeg,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
-  }) async {
-    return await WallpaperPlatform.instance.systemScreen(
-      location: location,
-      imageName: imageName,
-      fileExtension: fileExtension,
-    );
-  }
+  }) =>
+      _platform.systemScreen(
+        imageName: imageName,
+        fileExtension: fileExtension,
+        location: location,
+      );
 
-  /// Retrieves a stream of download progress for an image.
+  /// Opens the system wallpaper picker with [SystemWallpaperOptions].
+  static Future<String> systemScreenWithOptions(SystemWallpaperOptions options) =>
+      _platform.systemScreen(
+        imageName: options.imageName,
+        fileExtension: options.fileExtension,
+        location: options.location,
+      );
+
+  /// Stream of download progress (e.g. "45%") for saving an image from [url].
   ///
-  /// The stream may emit progress strings (e.g. "45%") and close on success, or
-  /// add an error if the download fails. Platform errors from the native side
-  /// are not used by this method (download runs in Dart); errors are generic.
+  /// Use the same [imageName], [fileExtension], and [location] when calling
+  /// [homeScreen], [lockScreen], [bothScreen], or [systemScreen] later.
   static Stream<String> imageDownloadProgress(
     String url, {
     String imageName = 'myimage',
     ImageFormat fileExtension = ImageFormat.jpeg,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
-  }) async* {
-    try {
-      yield* WallpaperPlatform.instance.imageDownloadProgress(
+  }) =>
+      _platform.imageDownloadProgress(
         url,
         imageName: imageName,
+        fileExtension: fileExtension,
         location: location,
       );
-    } catch (ex) {
-      rethrow;
-    }
-  }
 }
