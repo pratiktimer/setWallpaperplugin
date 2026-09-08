@@ -1,12 +1,3 @@
-// Copyright 2013 The Flutter Authors. All rights reserved.
-// Use of this file is governed by a BSD-style license.
-
-/// Strongly typed enums for the wallpaper plugin.
-///
-/// These enums are the single source of truth for the public API. Platform-specific
-/// representations (e.g. integer indices for method channel) are derived only at
-/// the platform implementation boundary, not in the API layer.
-
 /// Options for resizing the image when setting wallpaper.
 enum RequestSizeOptions {
   /// Resize to fit within dimensions while maintaining aspect ratio (may letterbox).
@@ -35,7 +26,37 @@ enum DownloadLocation {
 }
 
 /// Supported image file format for download and set operations.
-enum ImageFormat {
-  jpeg,
-  png,
+enum ImageFormat { jpeg, png }
+
+/// Target screen when setting wallpaper.
+enum WallpaperTarget {
+  /// Home screen only.
+  home,
+
+  /// Lock screen only.
+  lock,
+
+  /// Both home and lock screen.
+  both,
+}
+
+/// Modern fit behavior for source-based wallpaper APIs.
+///
+/// These values are opt-in and do not change legacy [RequestSizeOptions]
+/// behavior.
+enum WallpaperFit {
+  /// Scale to cover the requested dimensions and crop from the center.
+  cover,
+
+  /// Scale to fit inside the requested dimensions without cropping.
+  contain,
+
+  /// Scale exactly to the requested dimensions.
+  fill,
+
+  /// Center the image on a canvas with the requested dimensions.
+  center,
+
+  /// Use the decoded image without an additional fit transform.
+  none,
 }

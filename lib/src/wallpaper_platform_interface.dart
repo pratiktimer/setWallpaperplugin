@@ -2,11 +2,15 @@
 // Use of this file is governed by a BSD-style license.
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'wallpaper_enums.dart';
+import 'wallpaper_alignment.dart';
+import 'wallpaper_download.dart';
 import 'method_channel_wallpaper.dart';
+import 'wallpaper_size.dart';
 
 /// Abstract platform interface for wallpaper operations.
 ///
@@ -40,6 +44,20 @@ abstract class WallpaperPlatform extends PlatformInterface {
 
   /// Platform version string, or null if unavailable.
   Future<String?> getPlatformVersion();
+
+  /// Platform-recommended wallpaper dimensions.
+  Future<WallpaperSize> recommendedWallpaperSize() {
+    throw UnimplementedError(
+      'recommendedWallpaperSize() has not been implemented.',
+    );
+  }
+
+  /// Open the platform wallpaper chooser UI.
+  Future<String> openWallpaperChooser() {
+    throw UnimplementedError(
+      'openWallpaperChooser() has not been implemented.',
+    );
+  }
 
   /// Set home screen wallpaper from an already-downloaded image.
   Future<String> homeScreen({
@@ -78,6 +96,55 @@ abstract class WallpaperPlatform extends PlatformInterface {
     DownloadLocation location = DownloadLocation.temporaryDirectory,
   });
 
+  /// Set wallpaper from a local file path.
+  Future<String> setFromFile(
+    String filePath, {
+    WallpaperTarget target = WallpaperTarget.home,
+    String? imageName,
+    ImageFormat? fileExtension,
+    double width = 0,
+    double height = 0,
+    RequestSizeOptions options = RequestSizeOptions.resizeFit,
+    WallpaperFit? fit,
+    WallpaperAlignment? alignment,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) {
+    throw UnimplementedError('setFromFile() has not been implemented.');
+  }
+
+  /// Set wallpaper from in-memory image bytes.
+  Future<String> setFromBytes(
+    Uint8List imageBytes, {
+    WallpaperTarget target = WallpaperTarget.home,
+    String? imageName,
+    ImageFormat fileExtension = ImageFormat.jpeg,
+    double width = 0,
+    double height = 0,
+    RequestSizeOptions options = RequestSizeOptions.resizeFit,
+    WallpaperFit? fit,
+    WallpaperAlignment? alignment,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) {
+    throw UnimplementedError('setFromBytes() has not been implemented.');
+  }
+
+  /// Set wallpaper from a Flutter asset.
+  Future<String> setFromAsset(
+    String assetPath, {
+    String? package,
+    WallpaperTarget target = WallpaperTarget.home,
+    String? imageName,
+    ImageFormat? fileExtension,
+    double width = 0,
+    double height = 0,
+    RequestSizeOptions options = RequestSizeOptions.resizeFit,
+    WallpaperFit? fit,
+    WallpaperAlignment? alignment,
+    DownloadLocation location = DownloadLocation.temporaryDirectory,
+  }) {
+    throw UnimplementedError('setFromAsset() has not been implemented.');
+  }
+
   /// Stream of download progress (e.g. "45%") for saving an image from [url].
   Stream<String> imageDownloadProgress(
     String url, {
@@ -85,4 +152,17 @@ abstract class WallpaperPlatform extends PlatformInterface {
     ImageFormat fileExtension = ImageFormat.jpeg,
     DownloadLocation location = DownloadLocation.temporaryDirectory,
   });
+
+  /// Starts a typed, cancellable wallpaper image download.
+  WallpaperDownloadOperation download(
+    String url, {
+    WallpaperDownloadOptions options = const WallpaperDownloadOptions(),
+  }) {
+    throw UnimplementedError('download() has not been implemented.');
+  }
+
+  /// Clears plugin-managed temporary wallpaper downloads.
+  Future<void> clearCache() {
+    throw UnimplementedError('clearCache() has not been implemented.');
+  }
 }

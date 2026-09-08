@@ -26,7 +26,8 @@ void main() {
 
       await completer.future.timeout(
         const Duration(seconds: 2),
-        onTimeout: () => throw Exception('Expected stream to emit error or complete'),
+        onTimeout: () =>
+            throw Exception('Expected stream to emit error or complete'),
       );
 
       expect(errors, isNotEmpty);
@@ -38,7 +39,9 @@ void main() {
     });
 
     test('stream is a Stream<String>', () {
-      final stream = Wallpaper.imageDownloadProgress('https://example.com/image.jpg');
+      final stream = Wallpaper.imageDownloadProgress(
+        'https://example.com/image.jpg',
+      );
       expect(stream, isA<Stream<String>>());
       stream.listen(null, onError: (_, __) {}, onDone: () {}).cancel();
     });

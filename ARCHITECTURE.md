@@ -6,7 +6,7 @@ This document describes the refactored Flutter plugin architecture and how each 
 
 ## 1. Platform interface pattern
 
-**What it is:** The plugin uses a single abstract **platform interface** ([WallpaperPlatform]) that defines all operations (get version, set home/lock/both, system picker, download progress). The **public API** ([Wallpaper]) does not talk to the platform directly; it always calls `WallpaperPlatform.instance`.
+**What it is:** The plugin uses a single abstract **platform interface** ([WallpaperPlatform]) that defines all operations (get version, recommended size, chooser, set home/lock/both, system picker, download progress). The **public API** ([Wallpaper]) does not talk to the platform directly; it always calls `WallpaperPlatform.instance`.
 
 **Why:**  
 - **Testability:** Tests can set `WallpaperPlatform.instance` to a mock and never hit native code.  
@@ -36,6 +36,7 @@ lib/
   wallpaper.dart              # Public API + re-exports
   src/
     wallpaper_enums.dart      # RequestSizeOptions, DownloadLocation, ImageFormat
+    wallpaper_size.dart       # WallpaperSize value object
     wallpaper_platform_interface.dart
     method_channel_wallpaper.dart
 ```
@@ -49,6 +50,9 @@ lib/
 - **RequestSizeOptions** – resize behavior (resizeFit, resizeInside, resizeExact, resizeCentreCrop)  
 - **DownloadLocation** – where the file is stored (temporaryDirectory, applicationDirectory, externalDirectory)  
 - **ImageFormat** – jpeg, png  
+- **WallpaperTarget** – home, lock, or both screens
+- **WallpaperFit** – modern source API fit behavior: cover, contain, fill, center, none
+- **WallpaperAlignment** – source API crop/placement control for cover and center fits
 
 **Where strings still appear:**  
 - Success/error **messages** (e.g. `"Home Screen Set Successfully"`) remain strings by design.  
@@ -73,10 +77,22 @@ lib/
 - **[Wallpaper.setWallpaper]** – single entry point for home/lock/both: `Wallpaper.setWallpaper(WallpaperTarget.home, options)`.  
 - **[SystemWallpaperOptions]** – options for the system picker.  
 - **[Wallpaper.systemScreenWithOptions]** – system picker using [SystemWallpaperOptions].
+- **[Wallpaper.setFromFile]** – copy a local image into plugin storage, then set it.
+- **[Wallpaper.setFromBytes]** – write image bytes into plugin storage, then set it.
+- **[Wallpaper.setFromAsset]** – load a Flutter asset into plugin storage, then set it.
+- **[WallpaperSource] / [WallpaperOptions] / [Wallpaper.setWallpaperFromSource]** – unified source API with typed result objects.
+- **[Wallpaper.download]** – typed, cancellable download operation with optional headers, timeouts, and cache reuse.
+- **[Wallpaper.clearCache]** – removes plugin-managed temporary downloads created by the typed download API.
+- **[Wallpaper.recommendedWallpaperSize]** – returns platform-recommended wallpaper dimensions as a [WallpaperSize].
+- **[Wallpaper.openWallpaperChooser]** – opens Android's system wallpaper chooser.
+- **[WallpaperFit]** – opt-in fit modes for source-based APIs; legacy [RequestSizeOptions] behavior remains unchanged when omitted.
+- **[WallpaperAlignment]** – opt-in placement for [WallpaperFit.cover] crops and [WallpaperFit.center] canvas positioning.
 
 **Why:**  
 - Existing code keeps working without changes.  
 - New code can use one call with a strongly-typed options object and target enum instead of three separate methods with long parameter lists.
+- Developers can set wallpapers from files, generated images, cached bytes, and bundled assets without uploading an image to a URL first.
+- New source-based code can use [WallpaperResult] instead of catching raw [PlatformException].
 
 ---
 
@@ -107,8 +123,14 @@ The public API and platform interface never see these encodings; they work only 
 | Entry point | `wallpaper.dart` + scattered imports | Single `wallpaper.dart`; implementation in `src/` |
 | Platform abstraction | Platform interface present | Same pattern; interface and default impl in `src/` |
 | Options | Named params only | Same + [SetWallpaperOptions] / [SystemWallpaperOptions] and [WallpaperTarget] |
+| Fit behavior | Legacy RequestSizeOptions | Same + opt-in [WallpaperFit] for source APIs |
 | Enums | Already enums | Centralized in `src/wallpaper_enums.dart`; encoding only at channel boundary |
 | Backward compatibility | – | All existing methods and signatures unchanged |
+| Sources | Network download only | Same + local file, bytes, and Flutter asset helpers |
+| Errors | PlatformException | Same for legacy APIs + typed [WallpaperResult] for unified source API |
+| Downloads | String progress stream | Same + typed [WallpaperDownloadOperation] for new code |
+| Device metadata | Platform version only | Same + recommended wallpaper size |
+| System UI | Image-specific crop/set picker | Same + general Android wallpaper chooser |
 
 [Wallpaper]: lib/wallpaper.dart
 [WallpaperPlatform]: lib/src/wallpaper_platform_interface.dart
@@ -116,10 +138,14 @@ The public API and platform interface never see these encodings; they work only 
 [RequestSizeOptions]: lib/src/wallpaper_enums.dart
 [DownloadLocation]: lib/src/wallpaper_enums.dart
 [ImageFormat]: lib/src/wallpaper_enums.dart
+[WallpaperTarget]: lib/src/wallpaper_enums.dart
+[WallpaperFit]: lib/src/wallpaper_enums.dart
+[WallpaperAlignment]: lib/src/wallpaper_alignment.dart
 [SetWallpaperOptions]: lib/wallpaper.dart
 [SystemWallpaperOptions]: lib/wallpaper.dart
-[WallpaperTarget]: lib/wallpaper.dart
 [Wallpaper.getPlatformVersion]: lib/wallpaper.dart
+[Wallpaper.recommendedWallpaperSize]: lib/wallpaper.dart
+[Wallpaper.openWallpaperChooser]: lib/wallpaper.dart
 [Wallpaper.homeScreen]: lib/wallpaper.dart
 [Wallpaper.lockScreen]: lib/wallpaper.dart
 [Wallpaper.bothScreen]: lib/wallpaper.dart
@@ -127,4 +153,15 @@ The public API and platform interface never see these encodings; they work only 
 [Wallpaper.imageDownloadProgress]: lib/wallpaper.dart
 [Wallpaper.setWallpaper]: lib/wallpaper.dart
 [Wallpaper.systemScreenWithOptions]: lib/wallpaper.dart
+[Wallpaper.setFromFile]: lib/wallpaper.dart
+[Wallpaper.setFromBytes]: lib/wallpaper.dart
+[Wallpaper.setFromAsset]: lib/wallpaper.dart
+[WallpaperSource]: lib/wallpaper.dart
+[WallpaperOptions]: lib/wallpaper.dart
+[Wallpaper.setWallpaperFromSource]: lib/wallpaper.dart
+[WallpaperResult]: lib/wallpaper.dart
+[Wallpaper.download]: lib/wallpaper.dart
+[Wallpaper.clearCache]: lib/wallpaper.dart
+[WallpaperDownloadOperation]: lib/src/wallpaper_download.dart
+[WallpaperSize]: lib/src/wallpaper_size.dart
 [PlatformException]: https://api.flutter.dev/flutter/services/PlatformException-class.html

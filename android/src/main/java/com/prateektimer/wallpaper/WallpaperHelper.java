@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.net.Uri;
 
 import java.io.File;
@@ -26,17 +28,38 @@ public final class WallpaperHelper {
     }
 
     static Bitmap resizeBitmap(File file, int maxWidth, int maxHeight, RequestSizeOptions options) {
+        return resizeBitmap(file, maxWidth, maxHeight, options, null, 0, 0);
+    }
+
+    static Bitmap resizeBitmap(File file, int maxWidth, int maxHeight, RequestSizeOptions options, WallpaperFit fit) {
+        return resizeBitmap(file, maxWidth, maxHeight, options, fit, 0, 0);
+    }
+
+    static Bitmap resizeBitmap(File file, int maxWidth, int maxHeight, RequestSizeOptions options, WallpaperFit fit, double alignmentX, double alignmentY) {
         if (file == null || options == null) {
             return null;
         }
-        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
-        // decodeFile can return null for invalid/unreadable images; avoid NPE.
+
+        maxWidth = getScreenWidth(maxWidth);
+        maxHeight = getScreenHeight(maxHeight);
+
+        BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+        decodeOptions.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.getAbsolutePath(), decodeOptions);
+        if (decodeOptions.outWidth <= 0 || decodeOptions.outHeight <= 0) {
+            return null;
+        }
+
+        decodeOptions.inJustDecodeBounds = false;
+        decodeOptions.inSampleSize = calculateInSampleSize(decodeOptions, maxWidth, maxHeight);
+        Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), decodeOptions);
         if (bitmap == null) {
             return null;
         }
         try {
-            maxWidth = getScreenWidth(maxWidth);
-            maxHeight = getScreenHeight(maxHeight);
+            if (fit != null) {
+                return applyWallpaperFit(bitmap, maxWidth, maxHeight, fit, alignmentX, alignmentY);
+            }
 
             if (maxWidth > 0 && maxHeight > 0 &&
                     (options == RequestSizeOptions.RESIZE_FIT ||
@@ -54,9 +77,8 @@ public final class WallpaperHelper {
 
                 Bitmap resized = null;
                 if (options == RequestSizeOptions.RESIZE_EXACT) {
-                    // Fix: Scale to requested dimensions (finalWidth/finalHeight), not original width/height.
                     resized = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, false);
-                    bitmap.recycle();
+                    recycleIfDifferent(bitmap, resized);
                     return resized;
                 } else {
                     if (ratioMax > ratioBitmap) {
@@ -65,8 +87,7 @@ public final class WallpaperHelper {
                         finalHeight = (int) ((float) maxWidth / ratioBitmap);
                     }
                     Bitmap scaled = Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, true);
-                    // Fix: Recycle original to avoid bitmap memory leak.
-                    bitmap.recycle();
+                    recycleIfDifferent(bitmap, scaled);
                     return scaled;
                 }
             }
@@ -76,6 +97,106 @@ public final class WallpaperHelper {
             Log.w("AIC", "Failed to resize cropped image, return bitmap before resize", e);
         }
         return bitmap;
+    }
+
+    private static Bitmap applyWallpaperFit(Bitmap bitmap, int maxWidth, int maxHeight, WallpaperFit fit, double alignmentX, double alignmentY) {
+        if (fit == WallpaperFit.NONE) {
+            return bitmap;
+        }
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        if (width <= 0 || height <= 0 || maxWidth <= 0 || maxHeight <= 0) {
+            return bitmap;
+        }
+
+        if (fit == WallpaperFit.FILL) {
+            Bitmap resized = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
+            recycleIfDifferent(bitmap, resized);
+            return resized;
+        }
+
+        if (fit == WallpaperFit.CENTER) {
+            Bitmap canvasBitmap = Bitmap.createBitmap(maxWidth, maxHeight, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(canvasBitmap);
+            canvas.drawColor(Color.BLACK);
+            float left = alignedOffset(maxWidth - width, alignmentX);
+            float top = alignedOffset(maxHeight - height, alignmentY);
+            canvas.drawBitmap(bitmap, left, top, null);
+            recycleBitmap(bitmap);
+            return canvasBitmap;
+        }
+
+        float scaleWidth = (float) maxWidth / (float) width;
+        float scaleHeight = (float) maxHeight / (float) height;
+        float scale = fit == WallpaperFit.COVER ? Math.max(scaleWidth, scaleHeight) : Math.min(scaleWidth, scaleHeight);
+        int scaledWidth = Math.max(1, Math.round(width * scale));
+        int scaledHeight = Math.max(1, Math.round(height * scale));
+        Bitmap scaled = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true);
+        recycleIfDifferent(bitmap, scaled);
+
+        if (fit == WallpaperFit.CONTAIN) {
+            return scaled;
+        }
+
+        int cropLeft = alignedCropOffset(scaledWidth - maxWidth, alignmentX);
+        int cropTop = alignedCropOffset(scaledHeight - maxHeight, alignmentY);
+        int cropWidth = Math.min(maxWidth, scaledWidth - cropLeft);
+        int cropHeight = Math.min(maxHeight, scaledHeight - cropTop);
+        Bitmap cropped = Bitmap.createBitmap(scaled, cropLeft, cropTop, cropWidth, cropHeight);
+        recycleIfDifferent(scaled, cropped);
+        return cropped;
+    }
+
+    private static float alignedOffset(int availableSpace, double alignment) {
+        return availableSpace * alignmentFactor(alignment);
+    }
+
+    private static int alignedCropOffset(int overflow, double alignment) {
+        if (overflow <= 0) {
+            return 0;
+        }
+        return clamp(Math.round(overflow * alignmentFactor(alignment)), 0, overflow);
+    }
+
+    private static float alignmentFactor(double alignment) {
+        if (Double.isNaN(alignment) || Double.isInfinite(alignment)) {
+            alignment = 0;
+        }
+        double clamped = Math.max(-1, Math.min(1, alignment));
+        return (float) ((clamped + 1) / 2);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        int height = options.outHeight;
+        int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (reqWidth <= 0 || reqHeight <= 0) {
+            return inSampleSize;
+        }
+
+        while ((height / inSampleSize) > reqHeight * 2 || (width / inSampleSize) > reqWidth * 2) {
+            inSampleSize *= 2;
+        }
+
+        return inSampleSize;
+    }
+
+    static void recycleBitmap(Bitmap bitmap) {
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
+        }
+    }
+
+    private static void recycleIfDifferent(Bitmap original, Bitmap replacement) {
+        if (original != replacement) {
+            recycleBitmap(original);
+        }
     }
 
     /**
@@ -127,5 +248,13 @@ public final class WallpaperHelper {
         RESIZE_INSIDE,
         RESIZE_EXACT,
         RESIZE_CENTRE_CROP
+    }
+
+    enum WallpaperFit {
+        COVER,
+        CONTAIN,
+        FILL,
+        CENTER,
+        NONE
     }
 }

@@ -1,214 +1,312 @@
-# wallpaper
+# Wallpaper
 
-wallpaper plugin to set wallpaper from url in android
-## Usage
-To use this plugin, add `wallpaper: ^1.1.4` as a [dependency in your pubspec.yaml file](https://flutter.io/platform-plugins/).
-1) For using System Wallpaper you will need to add file_paths.xml in xml folder
-   app>main>res>xml where downloaded image will be stored.
+A Flutter plugin that allows you to **download an image from a URL and set it as wallpaper on Android**.
 
-2) include this permission in your manifest
-   <uses-permission android:name="android.permission.INTERNET"/>
-   <uses-permission android:name="android.permission.SET_WALLPAPER" />
-   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+The plugin supports setting wallpapers for:
 
-3) also make sure you have internet connection on device.
-### Example
+* Home screen
+* Lock screen
+* Both screens
+* System wallpaper
 
+---
 
-``` dart
-import 'dart:async';
-import 'dart:math';
-import 'package:flutter/material.dart';
-import 'package:wallpaper/wallpaper.dart';
+# Features
 
-void main() =>
-    runApp(const MaterialApp(debugShowCheckedModeBanner: false, home: MyApp()));
+* Download image from URL
+* Track download progress
+* Set wallpaper for **home screen**
+* Set wallpaper for **lock screen**
+* Set wallpaper for **both screens**
+* Set **system wallpaper**
+* Resize images before setting wallpaper
+* Use modern opt-in fit modes for source-based wallpapers
+* Read the platform-recommended wallpaper size
+* Open the Android system wallpaper chooser
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+---
 
-  @override
-  _MyAppState createState() => _MyAppState();
-}
+# Installation
 
-class _MyAppState extends State<MyApp> {
-  String home = "Home Screen",
-      lock = "Lock Screen",
-      both = "Both Screen",
-      system = "System";
+Add the plugin to your `pubspec.yaml`:
 
-  late Stream<String> progressString;
-  late String res;
-  bool downloading = false;
-  List<String> images = [
-    "https://images.pexels.com/photos/1624496/pexels-photo-1624496.jpeg",
-    "https://images.pexels.com/photos/1496373/pexels-photo-1496373.jpeg",
-    "https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg",
-    "https://images.pexels.com/photos/1526713/pexels-photo-1526713.jpeg",
-    "https://images.pexels.com/photos/1535162/pexels-photo-1535162.jpeg",
-    "https://images.pexels.com/photos/2670898/pexels-photo-2670898.jpeg",
-    "https://images.pexels.com/photos/1366630/pexels-photo-1366630.jpeg"
-  ];
-  var result = "Waiting to set wallpaper";
-  bool _isDisable = true;
-
-  int nextImageID = 0;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-          margin: const EdgeInsets.only(top: 20),
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
-          child: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                downloading
-                    ? imageDownloadDialog()
-                    : Image.network(
-                        images[nextImageID],
-                        fit: BoxFit.fitWidth,
-                      ),
-                ElevatedButton(
-                  onPressed: () async {
-                    setState(() {
-                      nextImageID = Random().nextInt(images.length);
-                      _isDisable = true;
-                    });
-                  },
-                  child: const Text("Get Random Image"),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    return await downloadImage(context);
-                  },
-                  child: const Text("Please download the image"),
-                ),
-                ElevatedButton(
-                  onPressed: _isDisable
-                      ? null
-                      : () async {
-                          var width = MediaQuery.of(context).size.width;
-                          var height = MediaQuery.of(context).size.height;
-                          home = await Wallpaper.homeScreen(
-                              options: RequestSizeOptions.resizeFit,
-                              width: width,
-                              height: height);
-                          setState(() {
-                            downloading = false;
-                            home = home;
-                          });
-                          print("Task Done");
-                        },
-                  child: Text(home),
-                ),
-                ElevatedButton(
-                  onPressed: _isDisable
-                      ? null
-                      : () async {
-                          lock = await Wallpaper.lockScreen();
-                          setState(() {
-                            downloading = false;
-                            lock = lock;
-                          });
-                          print("Task Done");
-                        },
-                  child: Text(lock),
-                ),
-                ElevatedButton(
-                  onPressed: _isDisable
-                      ? null
-                      : () async {
-                          both = await Wallpaper.bothScreen();
-                          setState(() {
-                            downloading = false;
-                            both = both;
-                          });
-                          print("Task Done");
-                        },
-                  child: Text(both),
-                ),
-                ElevatedButton(
-                  onPressed: _isDisable
-                      ? null
-                      : () async {
-                          system = await Wallpaper.systemScreen();
-                          setState(() {
-                            downloading = false;
-                            system = system;
-                          });
-                          print("Task Done");
-                        },
-                  child: Text(system),
-                ),
-              ],
-            ),
-          )),
-    );
-  }
-
-  Future<void> downloadImage(BuildContext context) async {
-    progressString = Wallpaper.imageDownloadProgress(images[nextImageID]);
-    progressString.listen((data) {
-      setState(() {
-        res = data;
-        downloading = true;
-      });
-      print("DataReceived: " + data);
-    }, onDone: () async {
-      setState(() {
-        downloading = false;
-        _isDisable = false;
-      });
-      print("Task Done");
-    }, onError: (error) {
-      setState(() {
-        downloading = false;
-        _isDisable = true;
-      });
-      print("Some Error");
-    });
-  }
-
-  Widget imageDownloadDialog() {
-    return SizedBox(
-      height: 120.0,
-      width: 200.0,
-      child: Card(
-        color: Colors.black,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 20.0),
-            Text(
-              "Downloading File : $res",
-              style: const TextStyle(color: Colors.white),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
+```yaml
+dependencies:
+  wallpaper: ^1.2.0
 ```
-## Getting Started
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.io/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+Then run:
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.io/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+```
+
+---
+
+# Android Configuration
+
+The plugin manifest already declares the permissions it needs for downloading
+network images and setting wallpapers:
+
+```xml
+<uses-permission android:name="android.permission.INTERNET"/>
+<uses-permission android:name="android.permission.SET_WALLPAPER"/>
+```
+
+Downloaded images are stored in app-private cache, files, or external files
+directories depending on `DownloadLocation`. Apps using the default workflow do
+not need `READ_EXTERNAL_STORAGE` or `WRITE_EXTERNAL_STORAGE`, and they do not
+need to add their own `file_paths.xml`.
+
+---
+
+# Usage
+
+Import the plugin:
+
+```dart
+import 'package:wallpaper/wallpaper.dart';
+```
+
+---
+
+## Recommended Wallpaper Size
+
+Use the recommended size when choosing, generating, cropping, or downloading an
+image for the current Android launcher:
+
+```dart
+final size = await Wallpaper.recommendedWallpaperSize();
+print('${size.width} x ${size.height}');
+```
+
+---
+
+## Open Wallpaper Chooser
+
+Open Android's built-in wallpaper chooser without passing a specific image:
+
+```dart
+await Wallpaper.openWallpaperChooser();
+```
+
+---
+
+## Download Image
+
+```dart
+final stream = Wallpaper.imageDownloadProgress(
+  imageUrl,
+  location: DownloadLocation.applicationDirectory,
+);
+
+stream.listen((progress) {
+  print(progress);
+});
+```
+
+---
+
+## Typed Download Operation
+
+Use `download` when you need typed progress, headers, timeouts, cache reuse, or
+cancellation:
+
+```dart
+final operation = Wallpaper.download(
+  imageUrl,
+  options: const WallpaperDownloadOptions(
+    imageName: 'daily_wallpaper',
+    headers: {'Authorization': 'Bearer token'},
+    connectTimeout: Duration(seconds: 15),
+    receiveTimeout: Duration(seconds: 30),
+    cachePolicy: WallpaperCachePolicy.reuse,
+  ),
+);
+
+operation.progress.listen((progress) {
+  print(progress.percentage);
+});
+
+final file = await operation.completed;
+
+await Wallpaper.homeScreen(
+  imageName: file.imageName,
+  fileExtension: file.fileExtension,
+  location: file.location,
+);
+```
+
+Cancel an active operation:
+
+```dart
+await operation.cancel();
+```
+
+Clear plugin-managed temporary downloads created by the typed download API:
+
+```dart
+await Wallpaper.clearCache();
+```
+
+---
+
+## Set Home Screen Wallpaper
+
+```dart
+await Wallpaper.homeScreen(
+  width: width,
+  height: height,
+  options: RequestSizeOptions.resizeFit,
+  location: DownloadLocation.applicationDirectory,
+);
+```
+
+---
+
+## Set Lock Screen Wallpaper
+
+```dart
+await Wallpaper.lockScreen(
+  location: DownloadLocation.applicationDirectory,
+);
+```
+
+---
+
+## Set Both Wallpapers
+
+```dart
+await Wallpaper.bothScreen(
+  location: DownloadLocation.applicationDirectory,
+);
+```
+
+---
+
+## Set System Wallpaper
+
+```dart
+await Wallpaper.systemScreen(
+  location: DownloadLocation.applicationDirectory,
+);
+```
+
+---
+
+## Set Wallpaper From a Local File
+
+```dart
+await Wallpaper.setFromFile(
+  file.path,
+  target: WallpaperTarget.home,
+  options: RequestSizeOptions.resizeFit,
+  fit: WallpaperFit.cover,
+  alignment: WallpaperAlignment.topCenter,
+);
+```
+
+`alignment` is optional and defaults to center. It applies to `WallpaperFit.cover`
+cropping and `WallpaperFit.center` placement.
+
+---
+
+## Set Wallpaper From Bytes
+
+```dart
+await Wallpaper.setFromBytes(
+  imageBytes,
+  target: WallpaperTarget.both,
+  fileExtension: ImageFormat.png,
+);
+```
+
+---
+
+## Set Wallpaper From an Asset
+
+```dart
+await Wallpaper.setFromAsset(
+  'assets/wallpaper.jpg',
+  target: WallpaperTarget.lock,
+);
+```
+
+For assets bundled by another package:
+
+```dart
+await Wallpaper.setFromAsset(
+  'assets/wallpaper.jpg',
+  package: 'wallpaper_assets',
+);
+```
+
+---
+
+## Unified Source API
+
+Use `setWallpaperFromSource` when you prefer a typed result instead of catching
+`PlatformException` from the legacy methods:
+
+```dart
+final result = await Wallpaper.setWallpaperFromSource(
+  source: WallpaperSource.file(file.path),
+  options: const WallpaperOptions(
+    target: WallpaperTarget.home,
+    fit: WallpaperFit.cover,
+    alignment: WallpaperAlignment.topCenter,
+  ),
+);
+
+switch (result) {
+  case WallpaperSuccess(:final message):
+    print(message);
+  case WallpaperFailure(:final exception):
+    print('${exception.code}: ${exception.message}');
+}
+```
+
+---
+
+# Example
+
+```dart
+final stream = Wallpaper.imageDownloadProgress(imageUrl);
+
+stream.listen((progress) {
+  print("Downloading: $progress");
+}, onDone: () async {
+
+  await Wallpaper.homeScreen(
+    width: 1080,
+    height: 1920,
+    options: RequestSizeOptions.resizeFit,
+  );
+
+});
+```
+
+---
+
+# Supported Platform
+
+| Platform | Supported |
+| -------- | --------- |
+| Android  | ✅         |
+| iOS      | ❌         |
+
+---
+
+# Notes
+
+* Internet connection is required to download images.
+* Lock screen wallpaper requires **Android 7.0+ (API 24)**.
+* Behavior may vary depending on device manufacturer.
+* Starting multiple downloads with the same `imageName` writes to the same file.
+  Use unique names for concurrent downloads.
+
+---
+
+# License
+
+MIT License
