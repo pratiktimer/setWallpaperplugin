@@ -2,7 +2,7 @@
   package="com.prateektimer.wallpaper.wallpaper">
     <application>
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name="com.prateektimer.wallpaper.WallpaperFileProvider"
             android:authorities="${applicationId}.com.prateektimer.wallpaper.provider"
             android:exported="false"
             android:grantUriPermissions="true">

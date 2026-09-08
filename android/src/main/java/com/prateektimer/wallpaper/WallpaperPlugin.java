@@ -10,18 +10,23 @@ import static com.prateektimer.wallpaper.WallpaperHelper.resizeBitmap;
 import android.app.Activity;
 import android.app.WallpaperManager;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.util.DisplayMetrics;
+import android.webkit.MimeTypeMap;
 
 import androidx.annotation.NonNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,6 +34,7 @@ import java.util.concurrent.Executors;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
+import io.flutter.Log;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.PluginRegistry;
@@ -40,6 +46,7 @@ public class WallpaperPlugin implements FlutterPlugin, MethodChannel.MethodCallH
     private static final int REQUEST_SIZE_OPTIONS_MAX_INDEX = 3;
     private static final int WALLPAPER_FIT_MAX_INDEX = 4;
     private static final int LOCATION_MAX_INDEX = 2;
+    private static final String LOG_TAG = "WallpaperPlugin";
 
     private Context context;
     private MethodChannel channel;
@@ -229,10 +236,16 @@ public class WallpaperPlugin implements FlutterPlugin, MethodChannel.MethodCallH
                 result.error("FILE_PROVIDER_ERROR", "Could not get content URI for image. Check FileProvider configuration.", null);
                 return;
             }
-            WallpaperManager wm = WallpaperManager.getInstance(activity);
-            Intent intent = new Intent(wm.getCropAndSetWallpaperIntent(contentUri));
-            intent.setDataAndType(contentUri, "image/*");
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            String providerMimeType = activity.getContentResolver().getType(contentUri);
+            String mimeType = resolveImageMimeType(file, request.fileExtension, providerMimeType);
+            Log.i(LOG_TAG, "Opening system wallpaper picker for uri=" + contentUri + ", file=" + file.getName() + ", providerMimeType=" + providerMimeType + ", mimeType=" + mimeType);
+            if (mimeType == null || !mimeType.startsWith("image/")) {
+                result.error("FILE_PROVIDER_MIME_ERROR", "ContentProvider returned non-image MIME type for " + file.getName() + ": " + providerMimeType + " (" + contentUri + ")", null);
+                return;
+            }
+
+            Intent intent = createSystemWallpaperIntent(contentUri, mimeType, providerMimeType);
+            grantUriReadPermissions(intent, contentUri);
             pendingSystemWallpaperResult = result;
             activity.startActivityForResult(intent, SYSTEM_WALLPAPER_REQUEST_CODE);
         } catch (ActivityNotFoundException e) {
@@ -245,6 +258,64 @@ public class WallpaperPlugin implements FlutterPlugin, MethodChannel.MethodCallH
             pendingSystemWallpaperResult = null;
             result.error("SYSTEM_WALLPAPER_FAILED", "Failed to open system wallpaper picker: " + e.getMessage(), null);
         }
+    }
+
+    private Intent createSystemWallpaperIntent(@NonNull Uri contentUri, @NonNull String mimeType, String providerMimeType) {
+        if (providerMimeType != null && providerMimeType.startsWith("image/")) {
+            try {
+                WallpaperManager wm = WallpaperManager.getInstance(activity);
+                Intent intent = new Intent(wm.getCropAndSetWallpaperIntent(contentUri));
+                intent.setDataAndType(contentUri, mimeType);
+                intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/jpeg", "image/png", "image/*"});
+                return intent;
+            } catch (IllegalArgumentException e) {
+                Log.w(LOG_TAG, "Wallpaper crop intent rejected URI; falling back to ACTION_ATTACH_DATA for uri=" + contentUri + ", mimeType=" + mimeType + ". " + e.getMessage());
+            }
+        } else {
+            Log.w(LOG_TAG, "Skipping wallpaper crop intent because ContentResolver reported providerMimeType=" + providerMimeType + " for uri=" + contentUri);
+        }
+
+        Intent fallback = new Intent(Intent.ACTION_ATTACH_DATA);
+        fallback.setDataAndType(contentUri, mimeType);
+        fallback.putExtra(Intent.EXTRA_STREAM, contentUri);
+        fallback.putExtra("mimeType", mimeType);
+        fallback.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/jpeg", "image/png", "image/*"});
+        return fallback;
+    }
+
+    private void grantUriReadPermissions(@NonNull Intent intent, @NonNull Uri contentUri) {
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setClipData(ClipData.newUri(activity.getContentResolver(), "wallpaper", contentUri));
+
+        PackageManager packageManager = activity.getPackageManager();
+        List<ResolveInfo> resolvedActivities = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+        for (ResolveInfo resolvedActivity : resolvedActivities) {
+            if (resolvedActivity.activityInfo != null && resolvedActivity.activityInfo.packageName != null) {
+                activity.grantUriPermission(resolvedActivity.activityInfo.packageName, contentUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
+        }
+    }
+
+    private String resolveImageMimeType(@NonNull File file, String fileExtension, String providerMimeType) {
+        if (providerMimeType != null && providerMimeType.startsWith("image/")) {
+            return providerMimeType;
+        }
+
+        String extension = fileExtension;
+        if (extension == null || extension.isEmpty()) {
+            extension = MimeTypeMap.getFileExtensionFromUrl(file.getName());
+        }
+        if (extension != null) {
+            String lowerExtension = extension.toLowerCase();
+            if ("jpeg".equals(lowerExtension) || "jpg".equals(lowerExtension)) {
+                return "image/jpeg";
+            }
+            if ("png".equals(lowerExtension)) {
+                return "image/png";
+            }
+        }
+
+        return providerMimeType != null ? providerMimeType : "image/*";
     }
 
     public void setHomeScreen(@NonNull WallpaperRequest request, @NonNull MethodChannel.Result result) {
